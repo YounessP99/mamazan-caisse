@@ -1,4 +1,4 @@
-var CACHE_NAME = 'mamazan-v4';
+var CACHE_NAME = 'mamazan-v5';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){
@@ -22,9 +22,19 @@ self.addEventListener('activate', function(event){
 self.addEventListener('fetch', function(event){
   if(event.request.method !== 'GET') return;
   if(new URL(event.request.url).origin !== self.location.origin) return;
+  // Réseau d'abord (toujours la dernière version quand il y a internet),
+  // copie locale en secours (fonctionnement hors-ligne).
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      return cached || fetch(event.request);
+    fetch(event.request).then(function(response){
+      if(response && response.status === 200){
+        var copy = response.clone();
+        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+      }
+      return response;
+    }).catch(function(){
+      return caches.match(event.request).then(function(cached){
+        return cached || caches.match('./index.html');
+      });
     })
   );
 });
