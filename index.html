@@ -325,6 +325,46 @@
   }
   #cfg-save:active{ background:var(--green-dark); }
 
+  /* ---- Gestion des produits ---- */
+  #manage-list{ margin-bottom:4px; }
+  .manage-row{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  #manage-panel input{
+    min-height:52px;
+    border:2px solid var(--green);
+    border-radius:10px;
+    background:#fff;
+    color:var(--green);
+    font-size:1.05rem; font-weight:700;
+    padding:0 10px;
+    -webkit-user-select:text; user-select:text;
+  }
+  .m-name{ flex:1 1 auto; min-width:0; }
+  .m-price{ flex:0 0 96px; text-align:right; }
+  .manage-euro{ font-weight:800; flex:0 0 auto; }
+  #add-product-form{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  #add-name{ flex:1 1 160px; }
+  #add-price{ flex:0 0 110px; text-align:right; }
+  #add-product-btn{
+    flex:1 1 100%;
+    background:var(--green);
+    color:var(--cream);
+    border:none;
+    border-radius:10px;
+    min-height:56px;
+    font-size:1.05rem; font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  #add-product-btn:active{ background:var(--green-dark); }
+  #manage-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; }
+  #manage-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
+  #manage-status.ok{ color:var(--green); }
+  #manage-status.err{ color:var(--terracotta); }
+
   /* ---- Reset ---- */
   #reset-panel{ flex:0 0 auto; }
   #reset-day-btn{
@@ -367,6 +407,7 @@
     <span>Caisse locale</span>
     <nav id="tabs">
       <button id="tab-caisse" class="tab-btn active">Caisse</button>
+      <button id="tab-produits" class="tab-btn">Produits</button>
       <button id="tab-fin" class="tab-btn">Fin de journée</button>
     </nav>
   </header>
@@ -410,6 +451,22 @@
     </div>
   </main>
 
+  <main id="view-produits" class="hidden">
+    <div class="col">
+      <div class="panel" id="manage-panel">
+        <h2>Gérer les produits</h2>
+        <div id="manage-list"></div>
+        <div id="add-product-form">
+          <input id="add-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Nom du nouveau produit">
+          <input id="add-price" type="text" inputmode="decimal" autocomplete="off" placeholder="Prix (1,20)">
+          <button id="add-product-btn">Ajouter le produit</button>
+        </div>
+        <p id="manage-status"></p>
+        <p id="manage-hint">Les changements s'appliquent tout de suite à la caisse et restent mémorisés sur cette tablette. Les commandes déjà enregistrées gardent leurs anciens prix et noms.</p>
+      </div>
+    </div>
+  </main>
+
   <main id="view-fin" class="hidden">
     <div class="col">
       <div class="panel" id="backup-panel">
@@ -450,7 +507,7 @@
 (function(){
   "use strict";
 
-  var PRODUCTS = [
+  var DEFAULT_PRODUCTS = [
     { id:'rotinature',   name:'Rôti nature',   price:1.20 },
     { id:'roti',         name:'Rôti',          price:1.40 },
     { id:'rotiglenryck', name:'Rôti Glenryck', price:1.70 },
@@ -460,6 +517,31 @@
     { id:'tamarin',      name:'Jus tamarin',   price:1.00 },
     { id:'gatopima',     name:'Gato Pima',     price:0.60 }
   ];
+
+  var PRODUCTS_KEY = 'mamazan_products_v1';
+
+  function loadProducts(){
+    try {
+      var raw = localStorage.getItem(PRODUCTS_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          var ok = parsed.filter(function(p){
+            return p && typeof p.id === 'string' && typeof p.name === 'string' &&
+                   typeof p.price === 'number' && isFinite(p.price) && p.price > 0;
+          });
+          if(ok.length) return ok;
+        }
+      }
+    } catch(e){}
+    return DEFAULT_PRODUCTS.map(function(p){ return {id:p.id, name:p.name, price:p.price}; });
+  }
+
+  function saveProducts(){
+    try { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(PRODUCTS)); } catch(e){}
+  }
+
+  var PRODUCTS = loadProducts();
 
   var STORAGE_KEY = 'mamazan_caisse_v1';
 
@@ -584,24 +666,33 @@
     }).join('');
   }
 
-  function renderSummary(){
-    var qtyByProduct = {};
-    PRODUCTS.forEach(function(p){ qtyByProduct[p.id] = 0; });
-    var totalRevenue = 0;
-
+  function computeDaySummary(){
+    var qtyById = {}, nameById = {}, revenue = 0;
     state.orders.forEach(function(order){
-      totalRevenue += order.total;
+      revenue += order.total;
       order.items.forEach(function(it){
-        qtyByProduct[it.id] = (qtyByProduct[it.id] || 0) + it.qty;
+        qtyById[it.id] = (qtyById[it.id] || 0) + it.qty;
+        if(!nameById[it.id]) nameById[it.id] = it.name;
       });
     });
+    var rows = [];
+    PRODUCTS.forEach(function(p){
+      rows.push({ name:p.name, qty: qtyById[p.id] || 0 });
+      delete qtyById[p.id];
+    });
+    // produits vendus aujourd'hui mais retirés de la carte depuis
+    Object.keys(qtyById).forEach(function(id){
+      rows.push({ name:(nameById[id] || id)+' (retiré)', qty: qtyById[id] });
+    });
+    return { rows: rows, revenue: revenue };
+  }
 
-    summaryListEl.innerHTML = PRODUCTS.map(function(p){
-      var qty = qtyByProduct[p.id];
-      return '<div class="summary-line"><span>'+p.name+'</span><span>'+qty+' vendu'+(qty>1?'s':'')+'</span></div>';
+  function renderSummary(){
+    var s = computeDaySummary();
+    summaryListEl.innerHTML = s.rows.map(function(r){
+      return '<div class="summary-line"><span>'+r.name+'</span><span>'+r.qty+' vendu'+(r.qty>1?'s':'')+'</span></div>';
     }).join('');
-
-    summaryTotalEl.textContent = formatEuro(totalRevenue);
+    summaryTotalEl.textContent = formatEuro(s.revenue);
   }
 
   function renderAll(){
@@ -741,22 +832,153 @@
   resetYesBtn.addEventListener('click', resetDay);
 
   // ---------- Onglets ----------
-  var viewCaisse = document.getElementById('view-caisse');
-  var viewFin    = document.getElementById('view-fin');
-  var tabCaisse  = document.getElementById('tab-caisse');
-  var tabFin     = document.getElementById('tab-fin');
+  var views = {
+    caisse:   document.getElementById('view-caisse'),
+    produits: document.getElementById('view-produits'),
+    fin:      document.getElementById('view-fin')
+  };
+  var tabs = {
+    caisse:   document.getElementById('tab-caisse'),
+    produits: document.getElementById('tab-produits'),
+    fin:      document.getElementById('tab-fin')
+  };
 
   function showView(name){
-    var caisse = (name === 'caisse');
-    viewCaisse.classList.toggle('hidden', !caisse);
-    viewFin.classList.toggle('hidden', caisse);
-    tabCaisse.classList.toggle('active', caisse);
-    tabFin.classList.toggle('active', !caisse);
+    Object.keys(views).forEach(function(k){
+      views[k].classList.toggle('hidden', k !== name);
+      tabs[k].classList.toggle('active', k === name);
+    });
     hideResetConfirm();
+    if(name === 'produits') renderManageProducts();
   }
 
-  tabCaisse.addEventListener('click', function(){ showView('caisse'); });
-  tabFin.addEventListener('click', function(){ showView('fin'); });
+  tabs.caisse.addEventListener('click', function(){ showView('caisse'); });
+  tabs.produits.addEventListener('click', function(){ showView('produits'); });
+  tabs.fin.addEventListener('click', function(){ showView('fin'); });
+
+  // ---------- Gestion des produits ----------
+  var manageListEl   = document.getElementById('manage-list');
+  var manageStatusEl = document.getElementById('manage-status');
+  var addNameEl      = document.getElementById('add-name');
+  var addPriceEl     = document.getElementById('add-price');
+  var addProductBtn  = document.getElementById('add-product-btn');
+  var pendingProductDelete = null;
+
+  function setManageStatus(msg, kind){
+    manageStatusEl.textContent = msg;
+    manageStatusEl.className = kind || '';
+  }
+
+  function parsePrice(text){
+    var v = parseFloat(String(text).replace(',', '.').replace(/[^0-9.]/g, ''));
+    if(!isFinite(v) || v <= 0) return null;
+    return Math.round(v * 100) / 100;
+  }
+
+  function priceToText(n){
+    return n.toFixed(2).replace('.', ',');
+  }
+
+  function renderManageProducts(){
+    manageListEl.innerHTML = PRODUCTS.map(function(p){
+      var actions;
+      if(pendingProductDelete === p.id){
+        actions = '<span class="confirm-text">Supprimer ?</span>' +
+          '<button class="mini-btn confirm-yes" data-maction="del-yes" data-id="'+p.id+'">Oui</button>' +
+          '<button class="mini-btn confirm-no" data-maction="del-no" data-id="'+p.id+'">Non</button>';
+      } else {
+        actions = '<button class="mini-btn" data-maction="del" data-id="'+p.id+'">✕</button>';
+      }
+      return '<div class="manage-row">' +
+        '<input class="m-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" data-id="'+p.id+'" value="'+p.name.replace(/"/g,'&quot;')+'">' +
+        '<input class="m-price" type="text" inputmode="decimal" autocomplete="off" data-id="'+p.id+'" value="'+priceToText(p.price)+'">' +
+        '<span class="manage-euro">€</span>' +
+        actions +
+      '</div>';
+    }).join('');
+  }
+
+  function afterProductsChanged(){
+    saveProducts();
+    renderProducts();
+    renderCart();
+    renderSummary();
+  }
+
+  manageListEl.addEventListener('change', function(e){
+    var id = e.target.dataset.id;
+    if(!id) return;
+    var p = findProduct(id);
+    if(!p) return;
+    if(e.target.matches('input.m-name')){
+      var name = e.target.value.trim();
+      if(name){
+        p.name = name;
+        afterProductsChanged();
+        setManageStatus('Nom modifié.', 'ok');
+      } else {
+        e.target.value = p.name;
+        setManageStatus('Le nom ne peut pas être vide.', 'err');
+      }
+    } else if(e.target.matches('input.m-price')){
+      var price = parsePrice(e.target.value);
+      if(price !== null){
+        p.price = price;
+        e.target.value = priceToText(price);
+        afterProductsChanged();
+        setManageStatus('Prix modifié.', 'ok');
+      } else {
+        e.target.value = priceToText(p.price);
+        setManageStatus('Prix invalide — exemple : 1,20', 'err');
+      }
+    }
+  });
+
+  manageListEl.addEventListener('focusin', function(e){
+    if(e.target.matches('input.m-price')) e.target.select();
+  });
+
+  manageListEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-maction]');
+    if(!btn) return;
+    var id = btn.dataset.id;
+    var action = btn.dataset.maction;
+    if(action === 'del'){
+      pendingProductDelete = id;
+      renderManageProducts();
+    } else if(action === 'del-no'){
+      pendingProductDelete = null;
+      renderManageProducts();
+    } else if(action === 'del-yes'){
+      var p = findProduct(id);
+      PRODUCTS = PRODUCTS.filter(function(x){ return x.id !== id; });
+      delete state.cart[id];
+      pendingProductDelete = null;
+      saveState();
+      afterProductsChanged();
+      renderManageProducts();
+      setManageStatus(p ? '« '+p.name+' » supprimé.' : 'Produit supprimé.', 'ok');
+    }
+  });
+
+  addProductBtn.addEventListener('click', function(){
+    var name = addNameEl.value.trim();
+    var price = parsePrice(addPriceEl.value);
+    if(!name){
+      setManageStatus('Indiquez le nom du nouveau produit.', 'err');
+      return;
+    }
+    if(price === null){
+      setManageStatus('Indiquez un prix valide — exemple : 1,20', 'err');
+      return;
+    }
+    PRODUCTS.push({ id:'p'+Date.now(), name:name, price:price });
+    addNameEl.value = '';
+    addPriceEl.value = '';
+    afterProductsChanged();
+    renderManageProducts();
+    setManageStatus('« '+name+' » ajouté à la carte.', 'ok');
+  });
 
   // ---------- Sauvegarde GitHub ----------
   var CFG_KEY = 'mamazan_github_cfg_v1';
@@ -814,18 +1036,12 @@
     lines.push('');
     lines.push('## Résumé du jour');
     lines.push('');
-    var qtyByProduct = {};
-    var revenue = 0;
-    PRODUCTS.forEach(function(p){ qtyByProduct[p.id] = 0; });
-    state.orders.forEach(function(o){
-      revenue += o.total;
-      o.items.forEach(function(it){ qtyByProduct[it.id] = (qtyByProduct[it.id]||0) + it.qty; });
-    });
-    PRODUCTS.forEach(function(p){
-      lines.push('- '+p.name+' : '+qtyByProduct[p.id]+' vendu'+(qtyByProduct[p.id]>1?'s':''));
+    var s = computeDaySummary();
+    s.rows.forEach(function(r){
+      lines.push('- '+r.name+' : '+r.qty+' vendu'+(r.qty>1?'s':''));
     });
     lines.push('');
-    lines.push('**Chiffre d\'affaires : '+formatEuro(revenue)+'**');
+    lines.push('**Chiffre d\'affaires : '+formatEuro(s.revenue)+'**');
     lines.push('');
     return lines.join('\n');
   }
