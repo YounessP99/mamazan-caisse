@@ -37,6 +37,8 @@
   button{ font-family:inherit; }
   input{ font-family:inherit; }
 
+  .hidden{ display:none !important; }
+
   #app{
     height:100vh; height:100dvh;
     display:flex; flex-direction:column;
@@ -325,6 +327,89 @@
   }
   #cfg-save:active{ background:var(--green-dark); }
 
+  /* ---- Rendu de monnaie ---- */
+  #change-overlay{
+    position:fixed; inset:0;
+    background:rgba(31,61,43,.6);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .change-box{
+    background:var(--cream);
+    border-radius:20px;
+    padding:26px;
+    width:100%; max-width:420px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .change-title{
+    font-size:1.15rem; font-weight:800; color:var(--green);
+    margin-bottom:14px; text-align:center;
+  }
+  .change-total-row{
+    display:flex; justify-content:space-between;
+    font-size:1.3rem; font-weight:800; color:var(--green);
+    padding-bottom:14px; margin-bottom:14px;
+    border-bottom:2px solid var(--line);
+  }
+  .change-label{
+    display:block; font-size:1rem; font-weight:700; color:var(--green);
+  }
+  .change-label input{
+    display:block; width:100%; margin-top:8px;
+    min-height:64px; font-size:1.6rem; font-weight:800; text-align:center;
+    border:2px solid var(--green); border-radius:14px;
+    background:#fff; color:var(--green);
+  }
+  .change-result{
+    text-align:center;
+    font-size:1.55rem; font-weight:800;
+    padding:18px 0;
+    min-height:1.3em;
+  }
+  .change-result.positive{ color:var(--green); }
+  .change-result.negative{ color:var(--terracotta); }
+  .change-result.zero{ color:var(--green); }
+  #change-done-btn{
+    width:100%;
+    background:var(--terracotta); color:var(--cream);
+    border:none; border-radius:14px;
+    min-height:68px; font-size:1.25rem; font-weight:800;
+    cursor:pointer; touch-action:manipulation;
+  }
+  #change-done-btn:active{ background:var(--terracotta-dark); }
+
+  /* ---- Confirmation d'ajout ---- */
+  #toast{
+    position:fixed;
+    left:50%; top:18px;
+    transform:translateX(-50%) translateY(-16px);
+    background:var(--green); color:var(--cream);
+    padding:12px 22px;
+    border-radius:999px;
+    font-size:1.05rem; font-weight:800;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+    z-index:60;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    #toast{ transition:opacity .01s linear; transform:translateX(-50%); }
+  }
+
+  /* ---- Journées précédentes ---- */
+  #archive-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+  #archive-list{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:80px; }
+  .archive-entry{ padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer; touch-action:manipulation; }
+  .archive-row{ display:flex; align-items:center; gap:10px; }
+  .archive-date{ font-weight:800; flex:1 1 auto; }
+  .archive-count{ color:#6b5e48; font-size:.9rem; }
+  .archive-revenue{ font-weight:800; }
+  .archive-detail{ margin-top:8px; font-size:.9rem; color:#4a4030; }
+  .archive-detail-line{ display:flex; justify-content:space-between; padding:2px 0; }
+
   /* ---- Gestion des produits ---- */
   #manage-list{ margin-bottom:4px; }
   .manage-row{
@@ -402,6 +487,23 @@
 </head>
 <body>
 <div id="app">
+  <div id="toast"></div>
+
+  <div id="change-overlay" class="hidden">
+    <div class="change-box">
+      <div class="change-title">Commande #<span id="change-order-num"></span> validée</div>
+      <div class="change-total-row">
+        <span>Total</span>
+        <span id="change-total">0,00 €</span>
+      </div>
+      <label class="change-label">Montant reçu
+        <input id="change-received" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </label>
+      <div id="change-result" class="change-result"></div>
+      <button id="change-done-btn">Nouvelle commande</button>
+    </div>
+  </div>
+
   <header>
     <h1>MamaZan</h1>
     <span>Caisse locale</span>
@@ -488,14 +590,19 @@
         </div>
       </div>
 
+      <div class="panel" id="archive-panel">
+        <h2>Journées précédentes</h2>
+        <div id="archive-list"></div>
+      </div>
+
       <div class="panel" id="reset-panel">
         <h2>Nouvelle journée</h2>
-        <button id="reset-day-btn">Réinitialiser la journée</button>
+        <button id="reset-day-btn">Clôturer la journée</button>
         <div id="reset-confirm" class="hidden">
-          <p>Es-tu sûr ? Toutes les commandes du jour seront supprimées définitivement.</p>
+          <p>La journée sera archivée dans « Journées précédentes », puis la caisse repartira à zéro pour demain. Continuer ?</p>
           <div id="reset-confirm-buttons">
             <button id="reset-confirm-no">Annuler</button>
-            <button id="reset-confirm-yes">Oui, tout effacer</button>
+            <button id="reset-confirm-yes">Oui, clôturer</button>
           </div>
         </div>
       </div>
@@ -591,6 +698,14 @@
   var resetConfirmEl  = document.getElementById('reset-confirm');
   var resetYesBtn     = document.getElementById('reset-confirm-yes');
   var resetNoBtn      = document.getElementById('reset-confirm-no');
+  var archiveListEl   = document.getElementById('archive-list');
+  var toastEl         = document.getElementById('toast');
+  var changeOverlayEl = document.getElementById('change-overlay');
+  var changeOrderNumEl= document.getElementById('change-order-num');
+  var changeTotalEl   = document.getElementById('change-total');
+  var changeReceivedEl= document.getElementById('change-received');
+  var changeResultEl  = document.getElementById('change-result');
+  var changeDoneBtn   = document.getElementById('change-done-btn');
 
   // ---------- Rendu ----------
   function renderProducts(){
@@ -740,6 +855,8 @@
     state.cart = {};
     saveState();
     renderAll();
+    showChangeOverlay(order);
+    maybeAutoBackup();
   }
 
   function deleteOrder(number){
@@ -747,11 +864,66 @@
     saveState();
   }
 
-  function resetDay(){
+  // ---------- Journées précédentes ----------
+  var ARCHIVE_KEY = 'mamazan_archive_v1';
+
+  function loadArchive(){
+    try {
+      var raw = localStorage.getItem(ARCHIVE_KEY);
+      if(raw){ var parsed = JSON.parse(raw); if(Array.isArray(parsed)) return parsed; }
+    } catch(e){}
+    return [];
+  }
+
+  function saveArchive(archive){
+    try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive)); } catch(e){}
+  }
+
+  var pendingArchiveOpen = null;
+
+  function renderArchive(){
+    var archive = loadArchive();
+    if(archive.length === 0){
+      archiveListEl.innerHTML = '<p class="empty-hint">Aucune journée archivée pour l\'instant.</p>';
+      return;
+    }
+    archiveListEl.innerHTML = archive.map(function(day, idx){
+      var open = pendingArchiveOpen === idx;
+      var detail = '';
+      if(open){
+        detail = '<div class="archive-detail">' + day.rows.map(function(r){
+          return '<div class="archive-detail-line"><span>'+r.name+'</span><span>'+r.qty+'</span></div>';
+        }).join('') + '</div>';
+      }
+      return '<div class="archive-entry" data-idx="'+idx+'">' +
+        '<div class="archive-row">' +
+          '<span class="archive-date">'+day.dateLabel+'</span>' +
+          '<span class="archive-count">'+day.ordersCount+' commande'+(day.ordersCount>1?'s':'')+'</span>' +
+          '<span class="archive-revenue">'+formatEuro(day.revenue)+'</span>' +
+        '</div>' + detail +
+      '</div>';
+    }).join('');
+  }
+
+  function closeDay(){
+    if(state.orders.length > 0){
+      var s = computeDaySummary();
+      var archive = loadArchive();
+      archive.unshift({
+        dateLabel: new Date().toLocaleDateString('fr-FR'),
+        closedAt: new Date().toISOString(),
+        revenue: s.revenue,
+        ordersCount: state.orders.length,
+        rows: s.rows
+      });
+      if(archive.length > 90) archive = archive.slice(0, 90);
+      saveArchive(archive);
+    }
     state = { orders: [], nextOrderNumber: 1, cart: {} };
     pendingDelete = null;
     saveState();
     renderAll();
+    renderArchive();
     hideResetConfirm();
   }
 
@@ -763,10 +935,12 @@
     var btn = e.target.closest('button[data-product]');
     if(!btn) return;
     var id = btn.dataset.product;
+    var p = findProduct(id);
     var current = state.cart[id] || 0;
     state.cart[id] = current + 1;
     saveState();
     renderCart();
+    if(p) showToast('+1 ' + p.name);
   });
 
   cartLinesEl.addEventListener('click', function(e){
@@ -829,7 +1003,75 @@
 
   resetDayBtn.addEventListener('click', showResetConfirm);
   resetNoBtn.addEventListener('click', hideResetConfirm);
-  resetYesBtn.addEventListener('click', resetDay);
+  resetYesBtn.addEventListener('click', closeDay);
+
+  archiveListEl.addEventListener('click', function(e){
+    var entry = e.target.closest('.archive-entry');
+    if(!entry) return;
+    var idx = parseInt(entry.dataset.idx, 10);
+    pendingArchiveOpen = (pendingArchiveOpen === idx) ? null : idx;
+    renderArchive();
+  });
+
+  // ---------- Confirmation visuelle d'ajout ----------
+  var toastTimer = null;
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.remove('show');
+    void toastEl.offsetWidth; // relance l'animation même si un toast est déjà affiché
+    toastEl.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 1100);
+  }
+
+  // ---------- Rendu de monnaie ----------
+  var currentChangeTotal = 0;
+
+  function showChangeOverlay(order){
+    currentChangeTotal = order.total;
+    changeOrderNumEl.textContent = order.number;
+    changeTotalEl.textContent = formatEuro(order.total);
+    changeReceivedEl.value = '';
+    changeResultEl.textContent = '';
+    changeResultEl.className = 'change-result';
+    changeOverlayEl.classList.remove('hidden');
+    setTimeout(function(){ changeReceivedEl.focus(); }, 50);
+  }
+
+  function hideChangeOverlay(){
+    changeOverlayEl.classList.add('hidden');
+  }
+
+  function updateChangeResult(){
+    var raw = changeReceivedEl.value.trim();
+    if(!raw){
+      changeResultEl.textContent = '';
+      changeResultEl.className = 'change-result';
+      return;
+    }
+    var v = parseFloat(raw.replace(',', '.'));
+    if(isNaN(v)){
+      changeResultEl.textContent = '';
+      changeResultEl.className = 'change-result';
+      return;
+    }
+    var diff = Math.round((v - currentChangeTotal) * 100) / 100;
+    if(diff < 0){
+      changeResultEl.textContent = 'Il manque ' + formatEuro(Math.abs(diff));
+      changeResultEl.className = 'change-result negative';
+    } else if(diff === 0){
+      changeResultEl.textContent = 'Compte juste';
+      changeResultEl.className = 'change-result zero';
+    } else {
+      changeResultEl.textContent = 'À rendre : ' + formatEuro(diff);
+      changeResultEl.className = 'change-result positive';
+    }
+  }
+
+  changeReceivedEl.addEventListener('input', updateChangeResult);
+  changeReceivedEl.addEventListener('focus', function(){ changeReceivedEl.select(); });
+  changeDoneBtn.addEventListener('click', hideChangeOverlay);
 
   // ---------- Onglets ----------
   var views = {
@@ -1050,6 +1292,21 @@
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  // ---------- Sauvegarde automatique ----------
+  // Se déclenche uniquement après une commande validée, et au maximum une fois par heure :
+  // boutique fermée = aucune commande = aucune sauvegarde automatique.
+  var LAST_AUTO_BACKUP_KEY = 'mamazan_last_autobackup_ts';
+
+  function maybeAutoBackup(){
+    var cfg = loadCfg();
+    if(!cfg || !cfg.owner || !cfg.repo || !cfg.token) return;
+    var last = 0;
+    try { last = parseInt(localStorage.getItem(LAST_AUTO_BACKUP_KEY), 10) || 0; } catch(e){}
+    if(Date.now() - last < 60 * 60 * 1000) return;
+    try { localStorage.setItem(LAST_AUTO_BACKUP_KEY, String(Date.now())); } catch(e){}
+    githubBackup();
+  }
+
   function githubBackup(){
     var cfg = loadCfg();
     if(!cfg || !cfg.owner || !cfg.repo || !cfg.token){
@@ -1145,6 +1402,7 @@
   // ---------- Démarrage ----------
   renderProducts();
   renderAll();
+  renderArchive();
 
   // ---------- Mise en cache hors-ligne ----------
   if('serviceWorker' in navigator){
