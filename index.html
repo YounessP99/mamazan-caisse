@@ -138,6 +138,9 @@
   .product-btn:active{ background:var(--green-dark); transform:scale(0.97); }
   .product-name{ font-size:1.25rem; }
   .product-price{ font-size:1.05rem; opacity:.9; }
+  .product-stock{ font-size:.95rem; font-weight:800; opacity:.95; }
+  .product-btn.out{ background:var(--terracotta); }
+  .product-btn.out:active{ background:var(--terracotta-dark); }
 
   /* ---- Panier ---- */
   #cart-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
@@ -245,6 +248,8 @@
     touch-action:manipulation;
   }
   .mini-btn:active{ background:var(--terracotta); color:var(--cream); }
+  .mini-btn.edit{ border-color:var(--green); color:var(--green); padding:0 12px; }
+  .mini-btn.edit:active{ background:var(--green); color:var(--cream); }
   .confirm-yes{ border-color:var(--terracotta); background:var(--terracotta); color:var(--cream); }
   .confirm-no{ border-color:var(--green); color:var(--green); }
   .confirm-no:active{ background:var(--green); color:var(--cream); }
@@ -370,14 +375,23 @@
   .change-result.positive{ color:var(--green); }
   .change-result.negative{ color:var(--terracotta); }
   .change-result.zero{ color:var(--green); }
-  #change-done-btn{
-    width:100%;
-    background:var(--terracotta); color:var(--cream);
-    border:none; border-radius:14px;
-    min-height:68px; font-size:1.25rem; font-weight:800;
+  .change-buttons{ display:flex; gap:10px; }
+  .change-buttons button{
+    flex:1 1 0; min-width:0;
+    min-height:68px; border-radius:14px;
+    font-size:1.1rem; font-weight:800;
     cursor:pointer; touch-action:manipulation;
   }
+  #change-done-btn{
+    background:var(--terracotta); color:var(--cream);
+    border:none;
+  }
   #change-done-btn:active{ background:var(--terracotta-dark); }
+  #change-back-btn{
+    background:var(--cream); color:var(--green);
+    border:2px solid var(--green);
+  }
+  #change-back-btn:active{ background:var(--green); color:var(--cream); }
 
   /* ---- Confirmation d'ajout ---- */
   #toast{
@@ -450,6 +464,71 @@
   #manage-status.ok{ color:var(--green); }
   #manage-status.err{ color:var(--terracotta); }
 
+  /* ---- Stock ---- */
+  #stock-list{ margin-bottom:4px; }
+  .stock-row{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .stock-name{ flex:1 1 140px; font-size:1.1rem; font-weight:700; }
+  .track-btn{
+    border:2px solid var(--green); background:var(--cream); color:var(--green);
+    border-radius:10px; min-height:52px; padding:0 14px;
+    font-size:.95rem; font-weight:800;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .track-btn.on{ background:var(--green); color:var(--cream); }
+  .stock-input{
+    width:84px; min-height:52px; text-align:center;
+    font-size:1.2rem; font-weight:800;
+    border:2px solid var(--green); border-radius:10px;
+    background:#fff; color:var(--green);
+    -webkit-user-select:text; user-select:text;
+  }
+  .stock-input.empty{ border-color:var(--terracotta); color:var(--terracotta); }
+  .stock-zero-btn{
+    border:2px solid var(--terracotta); background:var(--cream); color:var(--terracotta);
+    border-radius:10px; min-height:52px; padding:0 14px;
+    font-size:.95rem; font-weight:800;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .stock-zero-btn:active{ background:var(--terracotta); color:var(--cream); }
+  .stock-unlimited{ color:#8a7b63; font-size:.95rem; font-weight:600; flex:0 0 auto; }
+  #stock-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; }
+  #stock-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
+  #stock-status.ok{ color:var(--green); }
+  #stock-status.err{ color:var(--terracotta); }
+
+  /* ---- Alerte rupture ---- */
+  #out-overlay{
+    position:fixed; inset:0;
+    background:rgba(31,61,43,.6);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    z-index:55;
+  }
+  .out-box{
+    background:var(--cream);
+    border-radius:20px;
+    padding:26px;
+    width:100%; max-width:420px;
+    text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .out-title{ font-size:1.5rem; font-weight:800; color:var(--terracotta); margin-bottom:10px; }
+  .out-msg{ font-size:1.1rem; font-weight:600; color:var(--green); margin-bottom:22px; }
+  .out-buttons{ display:flex; gap:10px; }
+  .out-buttons button{
+    flex:1; min-height:64px; border-radius:14px;
+    font-size:1.05rem; font-weight:800;
+    cursor:pointer; touch-action:manipulation;
+  }
+  #out-cancel-btn{ background:var(--terracotta); color:var(--cream); border:none; }
+  #out-cancel-btn:active{ background:var(--terracotta-dark); }
+  #out-force-btn{ background:var(--cream); color:var(--green); border:2px solid var(--green); }
+  #out-force-btn:active{ background:var(--green); color:var(--cream); }
+
   /* ---- Reset ---- */
   #reset-panel{ flex:0 0 auto; }
   #reset-day-btn{
@@ -500,7 +579,21 @@
         <input id="change-received" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
       </label>
       <div id="change-result" class="change-result"></div>
-      <button id="change-done-btn">Nouvelle commande</button>
+      <div class="change-buttons">
+        <button id="change-back-btn">Modifier la commande</button>
+        <button id="change-done-btn">Nouvelle commande</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="out-overlay" class="hidden">
+    <div class="out-box">
+      <div id="out-title" class="out-title">Épuisé</div>
+      <p id="out-msg" class="out-msg"></p>
+      <div class="out-buttons">
+        <button id="out-cancel-btn">J'ai compris</button>
+        <button id="out-force-btn">Ajouter quand même</button>
+      </div>
     </div>
   </div>
 
@@ -510,6 +603,7 @@
     <nav id="tabs">
       <button id="tab-caisse" class="tab-btn active">Caisse</button>
       <button id="tab-produits" class="tab-btn">Produits</button>
+      <button id="tab-stock" class="tab-btn">Stock</button>
       <button id="tab-fin" class="tab-btn">Fin de journée</button>
     </nav>
   </header>
@@ -555,6 +649,17 @@
         </div>
         <p id="manage-status"></p>
         <p id="manage-hint">Les changements s'appliquent tout de suite à la caisse et restent mémorisés sur cette tablette. Les commandes déjà enregistrées gardent leurs anciens prix et noms.</p>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-stock" class="hidden">
+    <div class="col">
+      <div class="panel" id="stock-panel">
+        <h2>Stock des produits</h2>
+        <div id="stock-list"></div>
+        <p id="stock-status"></p>
+        <p id="stock-hint">Appuyez sur « Illimité » pour suivre le stock d'un article, puis saisissez la quantité préparée. Les articles laissés en « Illimité » ne sont jamais comptés. Chaque vente fait baisser le compteur, et la caisse prévient quand il tombe à 0.</p>
       </div>
     </div>
   </main>
@@ -626,6 +731,17 @@
 
   var PRODUCTS_KEY = 'mamazan_products_v1';
 
+  // Un produit est soit suivi en stock (tracked), soit en quantité illimitée.
+  function normalizeProduct(p){
+    return {
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      tracked: p.tracked === true,
+      stock: (typeof p.stock === 'number' && isFinite(p.stock)) ? Math.round(p.stock) : 0
+    };
+  }
+
   function loadProducts(){
     try {
       var raw = localStorage.getItem(PRODUCTS_KEY);
@@ -635,12 +751,12 @@
           var ok = parsed.filter(function(p){
             return p && typeof p.id === 'string' && typeof p.name === 'string' &&
                    typeof p.price === 'number' && isFinite(p.price) && p.price > 0;
-          });
+          }).map(normalizeProduct);
           if(ok.length) return ok;
         }
       }
     } catch(e){}
-    return DEFAULT_PRODUCTS.map(function(p){ return {id:p.id, name:p.name, price:p.price}; });
+    return DEFAULT_PRODUCTS.map(normalizeProduct);
   }
 
   function saveProducts(){
@@ -705,13 +821,39 @@
   var changeReceivedEl= document.getElementById('change-received');
   var changeResultEl  = document.getElementById('change-result');
   var changeDoneBtn   = document.getElementById('change-done-btn');
+  var changeBackBtn   = document.getElementById('change-back-btn');
+  var outOverlayEl    = document.getElementById('out-overlay');
+  var outTitleEl      = document.getElementById('out-title');
+  var outMsgEl        = document.getElementById('out-msg');
+  var outCancelBtn    = document.getElementById('out-cancel-btn');
+  var outForceBtn     = document.getElementById('out-force-btn');
+
+  // ---------- Stock ----------
+  // Quantité encore disponible, panier en cours déduit.
+  // Infinity pour les articles non suivis : ils ne sont jamais bloqués.
+  function available(id){
+    var p = findProduct(id);
+    if(!p || !p.tracked) return Infinity;
+    return p.stock - (state.cart[id] || 0);
+  }
 
   // ---------- Rendu ----------
   function renderProducts(){
     productsEl.innerHTML = PRODUCTS.map(function(p){
-      return '<button class="product-btn" data-product="'+p.id+'">' +
+      var stockHtml = '', outClass = '';
+      if(p.tracked){
+        var left = available(p.id);
+        if(left <= 0){
+          outClass = ' out';
+          stockHtml = '<span class="product-stock">Épuisé</span>';
+        } else {
+          stockHtml = '<span class="product-stock">reste '+left+'</span>';
+        }
+      }
+      return '<button class="product-btn'+outClass+'" data-product="'+p.id+'">' +
         '<span class="product-name">'+p.name+'</span>' +
         '<span class="product-price">'+formatEuro(p.price)+'</span>' +
+        stockHtml +
         '</button>';
     }).join('');
   }
@@ -750,6 +892,7 @@
 
     cartTotalEl.textContent = formatEuro(calcCartTotal());
     validateBtn.disabled = ids.length === 0;
+    renderProducts(); // les pastilles « reste N » suivent le panier en cours
   }
 
   function renderHistory(){
@@ -766,7 +909,8 @@
           '<button class="mini-btn confirm-yes" data-action="confirm-delete" data-number="'+order.number+'">Oui</button>' +
           '<button class="mini-btn confirm-no" data-action="cancel-delete" data-number="'+order.number+'">Non</button>';
       } else {
-        actionsHtml = '<button class="mini-btn delete-btn" data-action="ask-delete" data-number="'+order.number+'">✕</button>';
+        actionsHtml = '<button class="mini-btn edit" data-action="reopen" data-number="'+order.number+'">Modifier</button>' +
+          '<button class="mini-btn delete-btn" data-action="ask-delete" data-number="'+order.number+'">✕</button>';
       }
       return '<div class="order-entry">' +
         '<div class="order-row">' +
@@ -791,7 +935,7 @@
     });
     var rows = [];
     PRODUCTS.forEach(function(p){
-      rows.push({ name:p.name, qty: qtyById[p.id] || 0 });
+      rows.push({ name:p.name, qty: qtyById[p.id] || 0, tracked: p.tracked, left: p.stock });
       delete qtyById[p.id];
     });
     // produits vendus aujourd'hui mais retirés de la carte depuis
@@ -804,7 +948,8 @@
   function renderSummary(){
     var s = computeDaySummary();
     summaryListEl.innerHTML = s.rows.map(function(r){
-      return '<div class="summary-line"><span>'+r.name+'</span><span>'+r.qty+' vendu'+(r.qty>1?'s':'')+'</span></div>';
+      var left = r.tracked ? ' · reste '+r.left : '';
+      return '<div class="summary-line"><span>'+r.name+'</span><span>'+r.qty+' vendu'+(r.qty>1?'s':'')+left+'</span></div>';
     }).join('');
     summaryTotalEl.textContent = formatEuro(s.revenue);
   }
@@ -831,6 +976,24 @@
     else state.cart[id] = v;
     saveState();
     renderCart();
+    var p = findProduct(id);
+    if(p && p.tracked && v > p.stock) showToast('Stock dépassé : ' + p.name);
+  }
+
+  // Ajout au panier, avec alerte si le stock suivi ne suit pas.
+  function addToCart(id, qty, silent){
+    var p = findProduct(id);
+    state.cart[id] = (state.cart[id] || 0) + qty;
+    saveState();
+    renderCart();
+    if(p && !silent) showToast('+'+qty+' '+p.name);
+  }
+
+  function requestAdd(id, qty, silent){
+    var p = findProduct(id);
+    if(!p) return;
+    if(available(id) >= qty){ addToCart(id, qty, silent); return; }
+    showOutOverlay(id, qty, silent);
   }
 
   function validateOrder(){
@@ -850,17 +1013,64 @@
       total: total
     };
 
+    // la vente fait baisser le stock des articles suivis
+    items.forEach(function(it){
+      var p = findProduct(it.id);
+      if(p && p.tracked) p.stock -= it.qty;
+    });
+    saveProducts();
+
     state.orders.unshift(order);
     state.cart = {};
     saveState();
     renderAll();
+    renderStock();
     showChangeOverlay(order);
     maybeAutoBackup();
   }
 
   function deleteOrder(number){
+    var order = null;
+    state.orders.forEach(function(o){ if(o.number === number) order = o; });
+    if(order){
+      // commande annulée : les articles suivis reviennent en stock
+      order.items.forEach(function(it){
+        var p = findProduct(it.id);
+        if(p && p.tracked) p.stock += it.qty;
+      });
+      saveProducts();
+    }
     state.orders = state.orders.filter(function(o){ return o.number !== number; });
     saveState();
+  }
+
+  // Annule une commande validée et la remet dans le panier, pour la corriger
+  // (« ah non, ajoutez-moi aussi… »). Le stock suivi est restitué et le numéro
+  // de commande est réutilisé si c'était la dernière de la journée.
+  function reopenOrder(number){
+    var order = null;
+    state.orders.forEach(function(o){ if(o.number === number) order = o; });
+    if(!order) return;
+
+    order.items.forEach(function(it){
+      var p = findProduct(it.id);
+      if(!p) return; // produit retiré de la carte depuis : on ne le remet pas au panier
+      state.cart[it.id] = (state.cart[it.id] || 0) + it.qty;
+      if(p.tracked) p.stock += it.qty;
+    });
+
+    state.orders = state.orders.filter(function(o){ return o.number !== number; });
+    if(state.nextOrderNumber === number + 1) state.nextOrderNumber = number;
+
+    pendingDelete = null;
+    saveProducts();
+    saveState();
+    renderAll();
+    renderStock();
+    showView('caisse');
+    showToast('Commande #'+number+' remise dans le panier');
+    // la sauvegarde automatique doit repartir : le fichier du jour contient encore cette commande
+    try { localStorage.removeItem(LAST_AUTO_BACKUP_KEY); } catch(e){}
   }
 
   // ---------- Journées précédentes ----------
@@ -933,13 +1143,7 @@
   productsEl.addEventListener('click', function(e){
     var btn = e.target.closest('button[data-product]');
     if(!btn) return;
-    var id = btn.dataset.product;
-    var p = findProduct(id);
-    var current = state.cart[id] || 0;
-    state.cart[id] = current + 1;
-    saveState();
-    renderCart();
-    if(p) showToast('+1 ' + p.name);
+    requestAdd(btn.dataset.product, 1);
   });
 
   cartLinesEl.addEventListener('click', function(e){
@@ -948,8 +1152,8 @@
     var id = btn.dataset.id;
     var action = btn.dataset.action;
     if(action === 'minus1') changeQty(id, -1);
-    else if(action === 'plus1') changeQty(id, 1);
-    else if(action === 'plus5') changeQty(id, 5);
+    else if(action === 'plus1') requestAdd(id, 1, true);
+    else if(action === 'plus5') requestAdd(id, 5, true);
   });
 
   cartLinesEl.addEventListener('change', function(e){
@@ -992,11 +1196,13 @@
     } else if(action === 'confirm-delete'){
       deleteOrder(num);
       pendingDelete = null;
-      renderHistory();
-      renderSummary();
+      renderAll();
+      renderStock();
     } else if(action === 'cancel-delete'){
       pendingDelete = null;
       renderHistory();
+    } else if(action === 'reopen'){
+      reopenOrder(num);
     }
   });
 
@@ -1026,9 +1232,11 @@
 
   // ---------- Rendu de monnaie ----------
   var currentChangeTotal = 0;
+  var currentChangeNumber = null;
 
   function showChangeOverlay(order){
     currentChangeTotal = order.total;
+    currentChangeNumber = order.number;
     changeOrderNumEl.textContent = order.number;
     changeTotalEl.textContent = formatEuro(order.total);
     changeReceivedEl.value = '';
@@ -1039,6 +1247,7 @@
   }
 
   function hideChangeOverlay(){
+    currentChangeNumber = null;
     changeOverlayEl.classList.add('hidden');
   }
 
@@ -1072,15 +1281,55 @@
   changeReceivedEl.addEventListener('focus', function(){ changeReceivedEl.select(); });
   changeDoneBtn.addEventListener('click', hideChangeOverlay);
 
+  // « Modifier la commande » : on défait la validation et on repart du panier
+  changeBackBtn.addEventListener('click', function(){
+    var n = currentChangeNumber;
+    hideChangeOverlay();
+    if(n !== null) reopenOrder(n);
+  });
+
+  // ---------- Alerte rupture de stock ----------
+  var pendingAdd = null;
+
+  function showOutOverlay(id, qty, silent){
+    var p = findProduct(id);
+    var left = available(id);
+    if(left < 0) left = 0;
+    pendingAdd = { id:id, qty:qty, silent:silent };
+    if(left === 0){
+      outTitleEl.textContent = 'Épuisé';
+      outMsgEl.textContent = 'Il n\'y a plus de ' + p.name + '. Prévenez le client.';
+    } else {
+      outTitleEl.textContent = 'Stock insuffisant';
+      outMsgEl.textContent = 'Il ne reste que ' + left + ' ' + p.name + ' en stock.';
+    }
+    outOverlayEl.classList.remove('hidden');
+  }
+
+  function hideOutOverlay(){
+    pendingAdd = null;
+    outOverlayEl.classList.add('hidden');
+  }
+
+  outCancelBtn.addEventListener('click', hideOutOverlay);
+
+  // Le stock n'est qu'un repère : la vente reste possible si la quantité réelle était plus élevée.
+  outForceBtn.addEventListener('click', function(){
+    if(pendingAdd) addToCart(pendingAdd.id, pendingAdd.qty, pendingAdd.silent);
+    hideOutOverlay();
+  });
+
   // ---------- Onglets ----------
   var views = {
     caisse:   document.getElementById('view-caisse'),
     produits: document.getElementById('view-produits'),
+    stock:    document.getElementById('view-stock'),
     fin:      document.getElementById('view-fin')
   };
   var tabs = {
     caisse:   document.getElementById('tab-caisse'),
     produits: document.getElementById('tab-produits'),
+    stock:    document.getElementById('tab-stock'),
     fin:      document.getElementById('tab-fin')
   };
 
@@ -1091,10 +1340,12 @@
     });
     hideResetConfirm();
     if(name === 'produits') renderManageProducts();
+    if(name === 'stock'){ setStockStatus('', ''); renderStock(); }
   }
 
   tabs.caisse.addEventListener('click', function(){ showView('caisse'); });
   tabs.produits.addEventListener('click', function(){ showView('produits'); });
+  tabs.stock.addEventListener('click', function(){ showView('stock'); });
   tabs.fin.addEventListener('click', function(){ showView('fin'); });
 
   // ---------- Gestion des produits ----------
@@ -1144,6 +1395,7 @@
     renderProducts();
     renderCart();
     renderSummary();
+    renderStock();
   }
 
   manageListEl.addEventListener('change', function(e){
@@ -1213,12 +1465,95 @@
       setManageStatus('Indiquez un prix valide — exemple : 1,20', 'err');
       return;
     }
-    PRODUCTS.push({ id:'p'+Date.now(), name:name, price:price });
+    PRODUCTS.push(normalizeProduct({ id:'p'+Date.now(), name:name, price:price }));
     addNameEl.value = '';
     addPriceEl.value = '';
     afterProductsChanged();
     renderManageProducts();
-    setManageStatus('« '+name+' » ajouté à la carte.', 'ok');
+    setManageStatus('« '+name+' » ajouté à la carte (quantité illimitée — à régler dans l\'onglet Stock).', 'ok');
+  });
+
+  // ---------- Onglet Stock ----------
+  var stockListEl   = document.getElementById('stock-list');
+  var stockStatusEl = document.getElementById('stock-status');
+
+  function setStockStatus(msg, kind){
+    stockStatusEl.textContent = msg;
+    stockStatusEl.className = kind || '';
+  }
+
+  function renderStock(){
+    if(!stockListEl) return;
+    if(PRODUCTS.length === 0){
+      stockListEl.innerHTML = '<p class="empty-hint">Aucun produit sur la carte.</p>';
+      return;
+    }
+    stockListEl.innerHTML = PRODUCTS.map(function(p){
+      var right;
+      if(p.tracked){
+        right = '<input class="stock-input'+(p.stock<=0?' empty':'')+'" type="text" inputmode="numeric" pattern="[0-9]*" data-id="'+p.id+'" value="'+p.stock+'">' +
+                '<button class="stock-zero-btn" data-saction="zero" data-id="'+p.id+'">Remettre à 0</button>';
+      } else {
+        right = '<span class="stock-unlimited">Quantité illimitée</span>';
+      }
+      return '<div class="stock-row">' +
+        '<span class="stock-name">'+p.name+'</span>' +
+        '<button class="track-btn'+(p.tracked?' on':'')+'" data-saction="toggle" data-id="'+p.id+'">'+(p.tracked?'Suivi':'Illimité')+'</button>' +
+        right +
+      '</div>';
+    }).join('');
+  }
+
+  function afterStockChanged(){
+    saveProducts();
+    renderProducts();
+    renderSummary();
+  }
+
+  stockListEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-saction]');
+    if(!btn) return;
+    var p = findProduct(btn.dataset.id);
+    if(!p) return;
+    if(btn.dataset.saction === 'toggle'){
+      p.tracked = !p.tracked;
+      if(p.tracked && p.stock < 0) p.stock = 0;
+      afterStockChanged();
+      renderStock();
+      setStockStatus(p.tracked
+        ? '« '+p.name+' » est maintenant suivi en stock — saisissez la quantité préparée.'
+        : '« '+p.name+' » repasse en quantité illimitée.', 'ok');
+    } else if(btn.dataset.saction === 'zero'){
+      p.stock = 0;
+      afterStockChanged();
+      renderStock();
+      setStockStatus('Stock de « '+p.name+' » remis à 0.', 'ok');
+    }
+  });
+
+  stockListEl.addEventListener('change', function(e){
+    if(!e.target.matches('input.stock-input')) return;
+    var p = findProduct(e.target.dataset.id);
+    if(!p) return;
+    var v = parseInt(String(e.target.value).replace(/[^0-9-]/g, ''), 10);
+    if(isNaN(v)){
+      e.target.value = p.stock;
+      setStockStatus('Quantité invalide — indiquez un nombre, par exemple 40.', 'err');
+      return;
+    }
+    p.stock = v;
+    e.target.value = v;
+    e.target.classList.toggle('empty', v <= 0);
+    afterStockChanged();
+    setStockStatus('Stock de « '+p.name+' » : '+v+'.', 'ok');
+  });
+
+  stockListEl.addEventListener('focusin', function(e){
+    if(e.target.matches('input.stock-input')) e.target.select();
+  });
+
+  stockListEl.addEventListener('keydown', function(e){
+    if(e.target.matches('input.stock-input') && e.key === 'Enter') e.target.blur();
   });
 
   // ---------- Sauvegarde GitHub ----------
@@ -1279,7 +1614,7 @@
     lines.push('');
     var s = computeDaySummary();
     s.rows.forEach(function(r){
-      lines.push('- '+r.name+' : '+r.qty+' vendu'+(r.qty>1?'s':''));
+      lines.push('- '+r.name+' : '+r.qty+' vendu'+(r.qty>1?'s':'')+(r.tracked ? ' (reste '+r.left+')' : ''));
     });
     lines.push('');
     lines.push('**Chiffre d\'affaires : '+formatEuro(s.revenue)+'**');
@@ -1402,6 +1737,7 @@
   renderProducts();
   renderAll();
   renderArchive();
+  renderStock();
 
   // ---------- Mise en cache hors-ligne ----------
   if('serviceWorker' in navigator){

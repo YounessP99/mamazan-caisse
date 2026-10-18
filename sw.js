@@ -1,4 +1,4 @@
-var CACHE_NAME = 'mamazan-v7';
+var CACHE_NAME = 'mamazan-v8';
 var APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function(event){
