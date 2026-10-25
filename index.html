@@ -500,6 +500,190 @@
   #stock-status.ok{ color:var(--green); }
   #stock-status.err{ color:var(--terracotta); }
 
+  /* ================= GESTION ================= */
+
+  /* ---- Sous-navigation ---- */
+  #subnav{
+    flex:0 0 auto;
+    display:flex; gap:8px;
+    padding:10px 14px 0 14px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
+  #subnav.hidden{ display:none !important; }
+  .subtab-btn{
+    background:#fff8ee;
+    color:var(--green);
+    border:2px solid var(--line);
+    border-radius:10px;
+    min-height:44px;
+    padding:0 16px;
+    font-size:.98rem; font-weight:700;
+    white-space:nowrap;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .subtab-btn.active{ background:var(--green); color:var(--cream); border-color:var(--green); }
+
+  /* ---- Briques communes gestion ---- */
+  .g-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
+  .g-status.ok{ color:var(--green); }
+  .g-status.err{ color:var(--terracotta); }
+  .g-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; line-height:1.4; }
+
+  .g-form{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; align-items:center; }
+  .g-form input, .g-form select{
+    flex:1 1 120px;
+    min-width:0;
+    min-height:48px;
+    padding:0 12px;
+    border:2px solid var(--line);
+    border-radius:10px;
+    background:var(--cream);
+    color:var(--green);
+    font-size:1.05rem;
+  }
+  .g-form input:focus, .g-form select:focus{ outline:none; border-color:var(--green); }
+  .g-btn{
+    background:var(--green);
+    color:var(--cream);
+    border:none;
+    border-radius:10px;
+    min-height:48px;
+    padding:0 18px;
+    font-size:1.02rem; font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .g-btn:active{ background:var(--green-dark); }
+  .g-btn.wide{ width:100%; min-height:60px; font-size:1.12rem; margin-top:12px; }
+  .g-btn.ghost{ background:var(--cream); color:var(--green); border:2px solid var(--green); }
+  .g-btn.ghost:active{ background:var(--green); color:var(--cream); }
+  .g-btn.danger{ background:var(--terracotta); }
+  .g-btn.danger:active{ background:var(--terracotta-dark); }
+
+  .g-row{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .g-row:last-child{ border-bottom:none; }
+  .g-row-name{ flex:1 1 150px; font-size:1.08rem; font-weight:700; }
+  .g-row-sub{ flex:1 1 100%; font-size:.88rem; color:#8a7b63; margin-top:-4px; }
+  .g-num{
+    flex:0 0 86px;
+    min-height:46px;
+    padding:0 8px;
+    border:2px solid var(--line);
+    border-radius:10px;
+    background:var(--cream);
+    color:var(--green);
+    font-size:1.05rem; font-weight:700;
+    text-align:center;
+  }
+  .g-num:focus{ outline:none; border-color:var(--green); }
+  .g-num.low{ border-color:var(--terracotta); color:var(--terracotta); }
+  .g-unit{ flex:0 0 auto; font-size:.92rem; color:#8a7b63; font-weight:600; }
+
+  .g-tag{
+    flex:0 0 auto;
+    font-size:.78rem; font-weight:800;
+    text-transform:uppercase; letter-spacing:.4px;
+    padding:4px 8px;
+    border-radius:6px;
+    background:rgba(31,61,43,.1);
+    color:var(--green);
+  }
+  .g-tag.conso{ background:rgba(178,58,47,.12); color:var(--terracotta); }
+
+  /* ---- Alertes ---- */
+  #alert-bar{
+    flex:0 0 auto;
+    margin:10px 14px 0 14px;
+    padding:10px 14px;
+    border-radius:12px;
+    background:var(--terracotta);
+    color:var(--cream);
+    font-size:.98rem; font-weight:700;
+    line-height:1.35;
+  }
+  #alert-bar.hidden{ display:none !important; }
+
+  /* ---- Chiffres clés ---- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .kpi{
+    background:var(--cream);
+    border:2px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .kpi-label{ font-size:.82rem; font-weight:700; color:#8a7b63; text-transform:uppercase; letter-spacing:.4px; }
+  .kpi-value{ font-size:1.35rem; font-weight:800; margin-top:2px; }
+  .kpi.good .kpi-value{ color:var(--green); }
+  .kpi.bad .kpi-value{ color:var(--terracotta); }
+  .kpi.strong{ background:var(--green); border-color:var(--green); }
+  .kpi.strong .kpi-label{ color:rgba(251,243,231,.75); }
+  .kpi.strong .kpi-value{ color:var(--cream); }
+
+  /* ---- Liens fourniture → produits ---- */
+  .link-chips{ display:flex; gap:6px; flex-wrap:wrap; flex:1 1 100%; margin-top:4px; }
+  .link-chip{
+    background:var(--cream);
+    border:2px solid var(--line);
+    color:#8a7b63;
+    border-radius:999px;
+    min-height:38px;
+    padding:0 12px;
+    font-size:.9rem; font-weight:700;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .link-chip.on{ background:var(--green); border-color:var(--green); color:var(--cream); }
+
+  .ratio-line{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    font-size:.92rem; color:#4a4030;
+    padding:6px 0 6px 10px;
+    border-left:3px solid var(--line);
+    margin:4px 0 4px 4px;
+  }
+  .ratio-line .g-num{ flex:0 0 70px; min-height:40px; font-size:.98rem; }
+  .ratio-badge{ font-size:.76rem; font-weight:800; color:#8a7b63; text-transform:uppercase; }
+
+  /* ---- Mouvements d'argent ---- */
+  .money-line{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+    font-size:1.02rem;
+  }
+  .money-line:last-child{ border-bottom:none; }
+  .money-label{ flex:1 1 auto; }
+  .money-time{ font-size:.85rem; color:#8a7b63; }
+  .money-amount{ font-weight:800; white-space:nowrap; }
+  .money-amount.out{ color:var(--terracotta); }
+  .money-amount.in{ color:var(--green); }
+
+  .total-line{
+    display:flex; justify-content:space-between;
+    margin-top:10px; padding-top:10px;
+    border-top:2px solid var(--line);
+    font-size:1.2rem; font-weight:800;
+  }
+
+  .seg{ display:flex; gap:8px; flex:1 1 100%; }
+  .seg-btn{
+    flex:1 1 0;
+    background:var(--cream);
+    border:2px solid var(--line);
+    color:#8a7b63;
+    border-radius:10px;
+    min-height:46px;
+    font-size:.98rem; font-weight:700;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .seg-btn.on{ background:var(--green); border-color:var(--green); color:var(--cream); }
+
   /* ---- Alerte rupture ---- */
   #out-overlay{
     position:fixed; inset:0;
@@ -602,11 +786,19 @@
     <span>Caisse locale</span>
     <nav id="tabs">
       <button id="tab-caisse" class="tab-btn active">Caisse</button>
-      <button id="tab-produits" class="tab-btn">Produits</button>
-      <button id="tab-stock" class="tab-btn">Stock</button>
+      <button id="tab-gestion" class="tab-btn">Gestion</button>
       <button id="tab-fin" class="tab-btn">Fin de journée</button>
     </nav>
   </header>
+
+  <nav id="subnav" class="hidden">
+    <button class="subtab-btn active" data-view="produits">Carte</button>
+    <button class="subtab-btn" data-view="stock">Stock</button>
+    <button class="subtab-btn" data-view="achats">Achats</button>
+    <button class="subtab-btn" data-view="argent">Argent</button>
+  </nav>
+
+  <div id="alert-bar" class="hidden"></div>
 
   <main id="view-caisse">
     <div class="col col-left">
@@ -661,6 +853,100 @@
         <p id="stock-status"></p>
         <p id="stock-hint">Appuyez sur « Illimité » pour suivre le stock d'un article, puis saisissez la quantité préparée. Les articles laissés en « Illimité » ne sont jamais comptés. Chaque vente fait baisser le compteur, et la caisse prévient quand il tombe à 0.</p>
       </div>
+
+      <div class="panel" id="supplies-panel">
+        <h2>Matières premières &amp; consommables</h2>
+        <div id="supplies-list"></div>
+        <div class="g-form">
+          <input id="sup-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Nom (ex : Farine)">
+          <input id="sup-unit" type="text" autocapitalize="none" autocorrect="off" autocomplete="off" placeholder="Unité (paquet, kg…)">
+          <input id="sup-qty" type="text" inputmode="decimal" autocomplete="off" placeholder="Stock">
+          <input id="sup-alert" type="text" inputmode="decimal" autocomplete="off" placeholder="Alerte à">
+          <div class="seg">
+            <button class="seg-btn on" id="sup-kind-matiere">Matière première</button>
+            <button class="seg-btn" id="sup-kind-conso">Consommable</button>
+          </div>
+          <button class="g-btn" id="sup-add-btn">Ajouter</button>
+        </div>
+        <p id="supplies-status" class="g-status"></p>
+        <p class="g-hint">Touchez un article pour indiquer quels produits le consomment. À la clôture, vous saisissez ce que vous avez réellement utilisé et l'app en déduit toute seule la consommation par portion.</p>
+      </div>
+
+      <div class="panel" id="capacity-panel">
+        <h2>Portions encore possibles</h2>
+        <div id="capacity-list"></div>
+        <p class="g-hint">Estimation à partir du stock de matières et de la consommation constatée. Un produit sans matière rattachée n'apparaît pas ici.</p>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-achats" class="hidden">
+    <div class="col">
+      <div class="panel" id="purchase-panel">
+        <h2>Nouvel achat</h2>
+        <div class="g-form">
+          <input id="buy-label" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Libellé (ex : Metro, marché)">
+          <select id="buy-supply"></select>
+          <input id="buy-qty" type="text" inputmode="decimal" autocomplete="off" placeholder="Quantité">
+          <input id="buy-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Montant total €">
+          <div class="seg">
+            <button class="seg-btn on" id="buy-from-caisse">Payé avec la caisse</button>
+            <button class="seg-btn" id="buy-from-perso">Payé de ma poche</button>
+          </div>
+          <button class="g-btn" id="buy-add-btn">Enregistrer l'achat</button>
+        </div>
+        <p id="purchase-status" class="g-status"></p>
+        <p class="g-hint">L'achat remonte le stock de la fourniture choisie et met à jour son coût moyen, qui sert ensuite à calculer la marge. Laissez la fourniture sur « Aucune » pour une dépense qui ne réapprovisionne rien (essence, sac, emplacement).</p>
+      </div>
+
+      <div class="panel" id="purchase-list-panel">
+        <h2>Achats du jour</h2>
+        <div id="purchase-list"></div>
+        <div class="total-line">
+          <span>Total dépensé</span>
+          <span id="purchase-total">0,00 €</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-argent" class="hidden">
+    <div class="col">
+      <div class="panel" id="cash-panel">
+        <h2>Caisse</h2>
+        <div class="g-row">
+          <span class="g-row-name">Fond de caisse du jour</span>
+          <input id="cash-opening" class="g-num" type="text" inputmode="decimal" autocomplete="off" value="0">
+          <span class="g-unit">€</span>
+        </div>
+        <div class="kpi-grid" id="cash-kpis"></div>
+        <p id="cash-status" class="g-status"></p>
+      </div>
+
+      <div class="panel" id="move-panel">
+        <h2>Apport ou retrait</h2>
+        <div class="g-form">
+          <input id="move-label" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Motif (ex : retrait banque)">
+          <input id="move-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Montant €">
+          <div class="seg">
+            <button class="seg-btn on" id="move-type-retrait">Retrait</button>
+            <button class="seg-btn" id="move-type-apport">Apport</button>
+          </div>
+          <button class="g-btn" id="move-add-btn">Enregistrer</button>
+        </div>
+        <p id="move-status" class="g-status"></p>
+      </div>
+
+      <div class="panel" id="movements-panel">
+        <h2>Mouvements du jour</h2>
+        <div id="movements-list"></div>
+      </div>
+
+      <div class="panel" id="margin-panel">
+        <h2>Marge par produit</h2>
+        <div id="margin-list"></div>
+        <p class="g-hint">Le coût de revient vient des matières rattachées à chaque produit et de leur coût moyen d'achat. Il reste une estimation tant que vous n'avez pas saisi quelques journées de consommation réelle.</p>
+      </div>
     </div>
   </main>
 
@@ -673,6 +959,30 @@
           <span>Chiffre d'affaires</span>
           <span id="summary-total">0,00 €</span>
         </div>
+      </div>
+
+      <div class="panel" id="bilan-panel">
+        <h2>Bilan de la journée</h2>
+        <div class="kpi-grid" id="bilan-kpis"></div>
+      </div>
+
+      <div class="panel" id="usage-panel">
+        <h2>Ce qui a été utilisé</h2>
+        <div id="usage-list"></div>
+        <button class="g-btn wide" id="usage-save-btn">Enregistrer la consommation</button>
+        <p id="usage-status" class="g-status"></p>
+        <p class="g-hint">Saisissez ce que vous avez réellement consommé aujourd'hui, dans l'unité de l'article (par exemple 5 paquets de farine). Le stock est déduit, et l'app recale toute seule la consommation par portion à partir de ce qui a été vendu.</p>
+      </div>
+
+      <div class="panel" id="count-panel">
+        <h2>Comptage de la caisse</h2>
+        <div class="g-row">
+          <span class="g-row-name">Argent compté dans la caisse</span>
+          <input id="count-real" class="g-num" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+          <span class="g-unit">€</span>
+        </div>
+        <div class="kpi-grid" id="count-kpis"></div>
+        <p id="count-status" class="g-status"></p>
       </div>
 
       <div class="panel" id="backup-panel">
@@ -779,11 +1089,12 @@
           if(!Array.isArray(parsed.orders)) parsed.orders = [];
           if(typeof parsed.nextOrderNumber !== 'number') parsed.nextOrderNumber = 1;
           if(!parsed.cart || typeof parsed.cart !== 'object') parsed.cart = {};
+          if(!parsed.usage || typeof parsed.usage !== 'object') parsed.usage = {};
           return parsed;
         }
       }
     } catch(e){}
-    return { orders: [], nextOrderNumber: 1, cart: {} };
+    return { orders: [], nextOrderNumber: 1, cart: {}, usage: {} };
   }
 
   function saveState(){
@@ -1025,6 +1336,7 @@
     saveState();
     renderAll();
     renderStock();
+    refreshGestion();
     showChangeOverlay(order);
     maybeAutoBackup();
   }
@@ -1100,9 +1412,22 @@
       var open = pendingArchiveOpen === idx;
       var detail = '';
       if(open){
-        detail = '<div class="archive-detail">' + day.rows.map(function(r){
+        var lines = day.rows.map(function(r){
           return '<div class="archive-detail-line"><span>'+r.name+'</span><span>'+r.qty+'</span></div>';
-        }).join('') + '</div>';
+        });
+        if(typeof day.margin === 'number'){
+          lines.push('<div class="archive-detail-line"><span>Coût des matières</span><span>'+formatEuro(day.cost || 0)+'</span></div>');
+          lines.push('<div class="archive-detail-line"><span>Marge</span><span>'+formatEuro(day.margin)+'</span></div>');
+        }
+        if(day.cash && typeof day.cash.ecart === 'number'){
+          lines.push('<div class="archive-detail-line"><span>Écart de caisse</span><span>'+formatEuro(day.cash.ecart)+'</span></div>');
+        }
+        if(day.usage && day.usage.length){
+          day.usage.forEach(function(u){
+            lines.push('<div class="archive-detail-line"><span>Utilisé — '+u.name+'</span><span>'+u.qty+' '+u.unit+'</span></div>');
+          });
+        }
+        detail = '<div class="archive-detail">' + lines.join('') + '</div>';
       }
       return '<div class="archive-entry" data-idx="'+idx+'">' +
         '<div class="archive-row">' +
@@ -1115,24 +1440,66 @@
   }
 
   function closeDay(){
-    if(state.orders.length > 0){
+    var hadMovements = cash.movements.length > 0;
+    if(state.orders.length > 0 || hadMovements){
       var s = computeDaySummary();
+      var money = cashSummary();
+      var d = dayCostAndMargin();
+      var usageRows = Object.keys(state.usage || {}).map(function(supId){
+        var sup = findSupply(supId);
+        return {
+          name: sup ? sup.name : supId,
+          qty: state.usage[supId],
+          unit: sup ? sup.unit : ''
+        };
+      });
+
       var archive = loadArchive();
       archive.unshift({
         dateLabel: new Date().toLocaleDateString('fr-FR'),
         closedAt: new Date().toISOString(),
         revenue: s.revenue,
         ordersCount: state.orders.length,
-        rows: s.rows
+        rows: s.rows,
+        cost: d.cost,
+        margin: d.margin,
+        usage: usageRows,
+        cash: {
+          opening: cash.opening,
+          depensesCaisse: money.depensesCaisse,
+          depensesPerso: money.depensesPerso,
+          retraits: money.retraits,
+          apports: money.apports,
+          expected: money.expected,
+          counted: cash.counted,
+          ecart: (cash.counted === null) ? null : Math.round((cash.counted - money.expected) * 100) / 100
+        },
+        movements: cash.movements
       });
       if(archive.length > 90) archive = archive.slice(0, 90);
       saveArchive(archive);
     }
-    state = { orders: [], nextOrderNumber: 1, cart: {} };
+
+    state = { orders: [], nextOrderNumber: 1, cart: {}, usage: {} };
     pendingDelete = null;
     saveState();
+
+    // Le fond de caisse est reconduit : c'est presque toujours le même montant.
+    cash.movements = [];
+    cash.counted = null;
+    saveCash();
+    if(countRealEl) countRealEl.value = '';
+
     renderAll();
     renderArchive();
+    renderPurchases();
+    renderMovements();
+    renderCash();
+    renderBilan();
+    renderUsageForm();
+    renderCount();
+    setUsageStatus('', '');
+    setCountStatus('', '');
     hideResetConfirm();
   }
 
@@ -1320,33 +1687,60 @@
   });
 
   // ---------- Onglets ----------
+  // La caisse reste au premier niveau pour rester rapide pendant la vente.
+  // Tout ce qui se fait avant ou après la vente vit sous l'onglet « Gestion ».
+  var GESTION_VIEWS = ['produits', 'stock', 'achats', 'argent'];
+
   var views = {
     caisse:   document.getElementById('view-caisse'),
     produits: document.getElementById('view-produits'),
     stock:    document.getElementById('view-stock'),
+    achats:   document.getElementById('view-achats'),
+    argent:   document.getElementById('view-argent'),
     fin:      document.getElementById('view-fin')
   };
-  var tabs = {
-    caisse:   document.getElementById('tab-caisse'),
-    produits: document.getElementById('tab-produits'),
-    stock:    document.getElementById('tab-stock'),
-    fin:      document.getElementById('tab-fin')
-  };
+  var tabCaisse  = document.getElementById('tab-caisse');
+  var tabGestion = document.getElementById('tab-gestion');
+  var tabFin     = document.getElementById('tab-fin');
+  var subnavEl   = document.getElementById('subnav');
+
+  var lastGestionView = 'produits';
+  var currentView = 'caisse';
 
   function showView(name){
+    if(!views[name]) return;
+    currentView = name;
+    var inGestion = GESTION_VIEWS.indexOf(name) !== -1;
+    if(inGestion) lastGestionView = name;
+
     Object.keys(views).forEach(function(k){
       views[k].classList.toggle('hidden', k !== name);
-      tabs[k].classList.toggle('active', k === name);
     });
+    tabCaisse.classList.toggle('active', name === 'caisse');
+    tabGestion.classList.toggle('active', inGestion);
+    tabFin.classList.toggle('active', name === 'fin');
+    subnavEl.classList.toggle('hidden', !inGestion);
+    subnavEl.querySelectorAll('.subtab-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.view === name);
+    });
+
     hideResetConfirm();
     if(name === 'produits') renderManageProducts();
-    if(name === 'stock'){ setStockStatus('', ''); renderStock(); }
+    if(name === 'stock'){ setStockStatus('', ''); renderStock(); renderSupplies(); renderCapacity(); }
+    if(name === 'achats'){ setPurchaseStatus('', ''); renderBuySupplyOptions(); renderPurchases(); }
+    if(name === 'argent'){ setCashStatus('', ''); setMoveStatus('', ''); renderCash(); renderMovements(); renderMargins(); }
+    if(name === 'fin'){ renderBilan(); renderUsageForm(); renderCount(); }
+    renderAlerts();
   }
 
-  tabs.caisse.addEventListener('click', function(){ showView('caisse'); });
-  tabs.produits.addEventListener('click', function(){ showView('produits'); });
-  tabs.stock.addEventListener('click', function(){ showView('stock'); });
-  tabs.fin.addEventListener('click', function(){ showView('fin'); });
+  tabCaisse.addEventListener('click', function(){ showView('caisse'); });
+  tabGestion.addEventListener('click', function(){ showView(lastGestionView); });
+  tabFin.addEventListener('click', function(){ showView('fin'); });
+
+  subnavEl.addEventListener('click', function(e){
+    var btn = e.target.closest('.subtab-btn');
+    if(btn) showView(btn.dataset.view);
+  });
 
   // ---------- Gestion des produits ----------
   var manageListEl   = document.getElementById('manage-list');
@@ -1556,6 +1950,944 @@
     if(e.target.matches('input.stock-input') && e.key === 'Enter') e.target.blur();
   });
 
+  // ================= GESTION : fournitures, ratios, argent =================
+
+  var SUPPLIES_KEY = 'mamazan_supplies_v1';
+  var RATIOS_KEY   = 'mamazan_ratios_v1';
+  var CASH_KEY     = 'mamazan_cash_v1';
+
+  // Un article de fourniture : matière première (farine, lait) ou consommable
+  // (barquette, serviette). Le coût moyen se met à jour à chaque achat.
+  function normalizeSupply(s){
+    return {
+      id: s.id,
+      name: s.name,
+      kind: s.kind === 'conso' ? 'conso' : 'matiere',
+      unit: typeof s.unit === 'string' && s.unit ? s.unit : 'unité',
+      qty: numOrZero(s.qty),
+      alertAt: numOrZero(s.alertAt),
+      avgCost: numOrZero(s.avgCost)
+    };
+  }
+
+  function numOrZero(v){
+    var n = (typeof v === 'number') ? v : parseFloat(v);
+    return (isFinite(n) && !isNaN(n)) ? n : 0;
+  }
+
+  // Accepte « 5 », « 5,5 », « 5.5 » — la virgule est ce que les gens tapent.
+  function parseNum(text){
+    if(text === null || text === undefined) return null;
+    var cleaned = String(text).replace(',', '.').replace(/[^0-9.\-]/g, '');
+    if(cleaned === '' || cleaned === '-' || cleaned === '.') return null;
+    var v = parseFloat(cleaned);
+    if(!isFinite(v) || isNaN(v)) return null;
+    return Math.round(v * 1000) / 1000;
+  }
+
+  function numToText(n){
+    if(!isFinite(n)) return '0';
+    var r = Math.round(n * 1000) / 1000;
+    return String(r).replace('.', ',');
+  }
+
+  function loadSupplies(){
+    try {
+      var raw = localStorage.getItem(SUPPLIES_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          return parsed.filter(function(s){
+            return s && typeof s.id === 'string' && typeof s.name === 'string';
+          }).map(normalizeSupply);
+        }
+      }
+    } catch(e){}
+    return [];
+  }
+
+  function saveSupplies(){
+    try { localStorage.setItem(SUPPLIES_KEY, JSON.stringify(SUPPLIES)); } catch(e){}
+  }
+
+  var SUPPLIES = loadSupplies();
+
+  function findSupply(id){
+    for(var i=0;i<SUPPLIES.length;i++){ if(SUPPLIES[i].id === id) return SUPPLIES[i]; }
+    return null;
+  }
+
+  // RATIOS[supplyId][productId] = { per, samples }
+  // « per » = quantité de fourniture consommée par 1 produit vendu.
+  // La présence de la clé vaut rattachement : une fourniture sans ratio pour un
+  // produit n'est simplement pas liée à ce produit.
+  function loadRatios(){
+    try {
+      var raw = localStorage.getItem(RATIOS_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch(e){}
+    return {};
+  }
+
+  function saveRatios(){
+    try { localStorage.setItem(RATIOS_KEY, JSON.stringify(RATIOS)); } catch(e){}
+  }
+
+  var RATIOS = loadRatios();
+
+  function ratioFor(supplyId, productId){
+    var bySupply = RATIOS[supplyId];
+    if(!bySupply) return null;
+    return bySupply[productId] || null;
+  }
+
+  function isLinked(supplyId, productId){
+    return ratioFor(supplyId, productId) !== null;
+  }
+
+  function linkedProductIds(supplyId){
+    var bySupply = RATIOS[supplyId];
+    return bySupply ? Object.keys(bySupply) : [];
+  }
+
+  function setLink(supplyId, productId, on){
+    if(on){
+      if(!RATIOS[supplyId]) RATIOS[supplyId] = {};
+      if(!RATIOS[supplyId][productId]) RATIOS[supplyId][productId] = { per:0, samples:0 };
+    } else if(RATIOS[supplyId]){
+      delete RATIOS[supplyId][productId];
+      if(Object.keys(RATIOS[supplyId]).length === 0) delete RATIOS[supplyId];
+    }
+    saveRatios();
+  }
+
+  // ---------- Caisse (argent) ----------
+  // « opening » (fond de caisse) est volontairement conservé d'un jour sur
+  // l'autre : c'est presque toujours le même montant. Les mouvements, eux,
+  // repartent à zéro à chaque clôture.
+  function loadCash(){
+    try {
+      var raw = localStorage.getItem(CASH_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === 'object'){
+          return {
+            opening: numOrZero(parsed.opening),
+            counted: (typeof parsed.counted === 'number') ? parsed.counted : null,
+            movements: Array.isArray(parsed.movements) ? parsed.movements : []
+          };
+        }
+      }
+    } catch(e){}
+    return { opening: 0, counted: null, movements: [] };
+  }
+
+  function saveCash(){
+    try { localStorage.setItem(CASH_KEY, JSON.stringify(cash)); } catch(e){}
+  }
+
+  var cash = loadCash();
+
+  function dayRevenue(){
+    return state.orders.reduce(function(sum, o){ return sum + o.total; }, 0);
+  }
+
+  // Ce qui devrait physiquement se trouver dans la caisse maintenant.
+  function cashSummary(){
+    var depensesCaisse = 0, depensesPerso = 0, retraits = 0, apports = 0;
+    cash.movements.forEach(function(m){
+      if(m.type === 'achat'){
+        if(m.from === 'perso') depensesPerso += m.amount;
+        else depensesCaisse += m.amount;
+      }
+      else if(m.type === 'retrait') retraits += m.amount;
+      else if(m.type === 'apport') apports += m.amount;
+    });
+    var revenue = dayRevenue();
+    return {
+      revenue: revenue,
+      depensesCaisse: depensesCaisse,
+      depensesPerso: depensesPerso,
+      depensesTotal: depensesCaisse + depensesPerso,
+      retraits: retraits,
+      apports: apports,
+      expected: cash.opening + revenue + apports - depensesCaisse - retraits
+    };
+  }
+
+  // ---------- Coût de revient ----------
+  // Somme, pour chaque matière rattachée, de « quantité par portion » × coût
+  // moyen d'achat. Vaut 0 tant qu'aucun ratio n'est connu.
+  function productCost(productId){
+    var cost = 0;
+    SUPPLIES.forEach(function(s){
+      var r = ratioFor(s.id, productId);
+      if(r && r.per > 0) cost += r.per * s.avgCost;
+    });
+    return Math.round(cost * 10000) / 10000;
+  }
+
+  function productCostKnown(productId){
+    for(var i=0;i<SUPPLIES.length;i++){
+      var r = ratioFor(SUPPLIES[i].id, productId);
+      if(r && r.per > 0 && SUPPLIES[i].avgCost > 0) return true;
+    }
+    return false;
+  }
+
+  function soldQtyById(){
+    var qty = {};
+    state.orders.forEach(function(o){
+      o.items.forEach(function(it){ qty[it.id] = (qty[it.id] || 0) + it.qty; });
+    });
+    return qty;
+  }
+
+  function dayCostAndMargin(){
+    var sold = soldQtyById();
+    var cost = 0, revenue = 0;
+    Object.keys(sold).forEach(function(id){
+      cost += productCost(id) * sold[id];
+    });
+    revenue = dayRevenue();
+    return { cost: cost, revenue: revenue, margin: revenue - cost };
+  }
+
+  // ---------- Alertes de seuil ----------
+  var alertBarEl = document.getElementById('alert-bar');
+
+  function renderAlerts(){
+    var low = SUPPLIES.filter(function(s){
+      return s.alertAt > 0 && s.qty <= s.alertAt;
+    });
+    if(low.length === 0){
+      alertBarEl.classList.add('hidden');
+      alertBarEl.textContent = '';
+      return;
+    }
+    var names = low.map(function(s){
+      return s.name + ' (' + numToText(s.qty) + ' ' + s.unit + ')';
+    }).join(' · ');
+    alertBarEl.textContent = 'À racheter : ' + names;
+    alertBarEl.classList.remove('hidden');
+  }
+
+  // ---------- Écran Stock : fournitures ----------
+  var suppliesListEl   = document.getElementById('supplies-list');
+  var suppliesStatusEl = document.getElementById('supplies-status');
+  var supNameEl        = document.getElementById('sup-name');
+  var supUnitEl        = document.getElementById('sup-unit');
+  var supQtyEl         = document.getElementById('sup-qty');
+  var supAlertEl       = document.getElementById('sup-alert');
+  var supKindMatiereEl = document.getElementById('sup-kind-matiere');
+  var supKindConsoEl   = document.getElementById('sup-kind-conso');
+  var supAddBtn        = document.getElementById('sup-add-btn');
+  var capacityListEl   = document.getElementById('capacity-list');
+
+  var newSupplyKind = 'matiere';
+  var openSupplyId = null;
+  var pendingSupplyDelete = null;
+
+  function setSuppliesStatus(msg, kind){
+    suppliesStatusEl.textContent = msg;
+    suppliesStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+
+  function escapeAttr(s){ return String(s).replace(/"/g, '&quot;'); }
+
+  function renderSupplies(){
+    if(!suppliesListEl) return;
+    if(SUPPLIES.length === 0){
+      suppliesListEl.innerHTML = '<p class="empty-hint">Aucune matière ni consommable enregistré. Ajoutez-en un ci-dessous.</p>';
+      return;
+    }
+    suppliesListEl.innerHTML = SUPPLIES.map(function(s){
+      var actions;
+      if(pendingSupplyDelete === s.id){
+        actions = '<span class="confirm-text">Supprimer ?</span>' +
+          '<button class="mini-btn confirm-yes" data-supaction="del-yes" data-id="'+s.id+'">Oui</button>' +
+          '<button class="mini-btn confirm-no" data-supaction="del-no" data-id="'+s.id+'">Non</button>';
+      } else {
+        actions = '<button class="mini-btn" data-supaction="del" data-id="'+s.id+'">✕</button>';
+      }
+
+      var detail = '';
+      if(openSupplyId === s.id){
+        var chips = PRODUCTS.map(function(p){
+          var on = isLinked(s.id, p.id) ? ' on' : '';
+          return '<button class="link-chip'+on+'" data-supaction="link" data-id="'+s.id+'" data-pid="'+p.id+'">'+p.name+'</button>';
+        }).join('');
+
+        var ratios = linkedProductIds(s.id).map(function(pid){
+          var p = findProduct(pid);
+          if(!p) return '';
+          var r = ratioFor(s.id, pid);
+          var badge = r.samples > 0 ? 'constaté sur ' + r.samples + ' j' : (r.per > 0 ? 'saisi' : 'inconnu');
+          // Affiché en « X pour 100 portions » : plus lisible qu'un ratio à 4 décimales.
+          var per100 = Math.round(r.per * 100 * 1000) / 1000;
+          return '<div class="ratio-line">' +
+            '<span>' + p.name + ' :</span>' +
+            '<input class="g-num" data-ratio-sup="'+s.id+'" data-ratio-pid="'+pid+'" type="text" inputmode="decimal" autocomplete="off" value="'+numToText(per100)+'">' +
+            '<span class="g-unit">' + s.unit + ' pour 100</span>' +
+            '<span class="ratio-badge">' + badge + '</span>' +
+          '</div>';
+        }).join('');
+
+        detail = '<div class="link-chips">' + (chips || '<span class="g-unit">Aucun produit sur la carte.</span>') + '</div>' + ratios;
+      }
+
+      var lowClass = (s.alertAt > 0 && s.qty <= s.alertAt) ? ' low' : '';
+      var tagClass = s.kind === 'conso' ? ' conso' : '';
+      var tagText  = s.kind === 'conso' ? 'Consommable' : 'Matière';
+
+      return '<div class="g-row" data-sup-row="'+s.id+'">' +
+        '<button class="g-row-name" style="background:none;border:none;text-align:left;padding:0;cursor:pointer;color:inherit;font:inherit;font-weight:700;" data-supaction="open" data-id="'+s.id+'">'+s.name+'</button>' +
+        '<span class="g-tag'+tagClass+'">'+tagText+'</span>' +
+        '<input class="g-num'+lowClass+'" data-supfield="qty" data-id="'+s.id+'" type="text" inputmode="decimal" autocomplete="off" value="'+numToText(s.qty)+'">' +
+        '<span class="g-unit">'+s.unit+'</span>' +
+        '<input class="g-num" data-supfield="alertAt" data-id="'+s.id+'" type="text" inputmode="decimal" autocomplete="off" value="'+numToText(s.alertAt)+'">' +
+        '<span class="g-unit">seuil</span>' +
+        actions +
+        (s.avgCost > 0 ? '<span class="g-row-sub">Coût moyen : '+formatEuro(s.avgCost)+' / '+s.unit+'</span>' : '<span class="g-row-sub">Coût inconnu — enregistrez un achat pour calculer la marge.</span>') +
+        detail +
+      '</div>';
+    }).join('');
+  }
+
+  // Combien de portions encore produisibles, limitées par la matière la plus rare.
+  function renderCapacity(){
+    if(!capacityListEl) return;
+    var rows = [];
+    PRODUCTS.forEach(function(p){
+      var limit = Infinity, limiter = '';
+      SUPPLIES.forEach(function(s){
+        var r = ratioFor(s.id, p.id);
+        if(!r || r.per <= 0) return;
+        var possible = Math.floor(s.qty / r.per);
+        if(possible < limit){ limit = possible; limiter = s.name; }
+      });
+      if(limit !== Infinity) rows.push({ name:p.name, limit:Math.max(0, limit), limiter:limiter });
+    });
+    if(rows.length === 0){
+      capacityListEl.innerHTML = '<p class="empty-hint">Rattachez des matières à vos produits pour voir combien de portions vous pouvez encore faire.</p>';
+      return;
+    }
+    capacityListEl.innerHTML = rows.map(function(r){
+      return '<div class="summary-line" style="color:var(--green)"><span>'+r.name+'</span><span>'+r.limit+' — limité par '+r.limiter+'</span></div>';
+    }).join('');
+  }
+
+  supKindMatiereEl.addEventListener('click', function(){
+    newSupplyKind = 'matiere';
+    supKindMatiereEl.classList.add('on');
+    supKindConsoEl.classList.remove('on');
+  });
+  supKindConsoEl.addEventListener('click', function(){
+    newSupplyKind = 'conso';
+    supKindConsoEl.classList.add('on');
+    supKindMatiereEl.classList.remove('on');
+  });
+
+  supAddBtn.addEventListener('click', function(){
+    var name = supNameEl.value.trim();
+    if(!name){ setSuppliesStatus('Indiquez un nom.', 'err'); return; }
+    var unit = supUnitEl.value.trim() || 'unité';
+    var qty = parseNum(supQtyEl.value);
+    var alertAt = parseNum(supAlertEl.value);
+    SUPPLIES.push(normalizeSupply({
+      id: 's' + Date.now(),
+      name: name,
+      kind: newSupplyKind,
+      unit: unit,
+      qty: qty === null ? 0 : qty,
+      alertAt: alertAt === null ? 0 : alertAt
+    }));
+    supNameEl.value = ''; supUnitEl.value = ''; supQtyEl.value = ''; supAlertEl.value = '';
+    saveSupplies();
+    renderSupplies();
+    renderCapacity();
+    renderAlerts();
+    renderBuySupplyOptions();
+    setSuppliesStatus('« '+name+' » ajouté. Touchez son nom pour choisir les produits qui le consomment.', 'ok');
+  });
+
+  suppliesListEl.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-supaction]');
+    if(!btn) return;
+    var action = btn.dataset.supaction;
+    var id = btn.dataset.id;
+
+    if(action === 'open'){
+      openSupplyId = (openSupplyId === id) ? null : id;
+      renderSupplies();
+    } else if(action === 'link'){
+      var pid = btn.dataset.pid;
+      setLink(id, pid, !isLinked(id, pid));
+      renderSupplies();
+      renderCapacity();
+      renderMargins();
+    } else if(action === 'del'){
+      pendingSupplyDelete = id;
+      renderSupplies();
+    } else if(action === 'del-no'){
+      pendingSupplyDelete = null;
+      renderSupplies();
+    } else if(action === 'del-yes'){
+      var s = findSupply(id);
+      SUPPLIES = SUPPLIES.filter(function(x){ return x.id !== id; });
+      delete RATIOS[id];
+      pendingSupplyDelete = null;
+      if(openSupplyId === id) openSupplyId = null;
+      saveSupplies();
+      saveRatios();
+      renderSupplies();
+      renderCapacity();
+      renderAlerts();
+      renderBuySupplyOptions();
+      renderMargins();
+      setSuppliesStatus(s ? '« '+s.name+' » supprimé.' : 'Article supprimé.', 'ok');
+    }
+  });
+
+  suppliesListEl.addEventListener('change', function(e){
+    var t = e.target;
+
+    if(t.matches('input[data-supfield]')){
+      var s = findSupply(t.dataset.id);
+      if(!s) return;
+      var v = parseNum(t.value);
+      if(v === null || v < 0){
+        t.value = numToText(s[t.dataset.supfield]);
+        setSuppliesStatus('Valeur invalide — indiquez un nombre, par exemple 5.', 'err');
+        return;
+      }
+      s[t.dataset.supfield] = v;
+      t.value = numToText(v);
+      saveSupplies();
+      renderSupplies();
+      renderCapacity();
+      renderAlerts();
+      setSuppliesStatus('« '+s.name+' » mis à jour.', 'ok');
+      return;
+    }
+
+    if(t.matches('input[data-ratio-sup]')){
+      var supId = t.dataset.ratioSup;
+      var pid = t.dataset.ratioPid;
+      var r = ratioFor(supId, pid);
+      if(!r) return;
+      var per100 = parseNum(t.value);
+      if(per100 === null || per100 < 0){
+        t.value = numToText(Math.round(r.per * 100 * 1000) / 1000);
+        setSuppliesStatus('Valeur invalide — exemple : 10 paquets pour 100 portions.', 'err');
+        return;
+      }
+      // saisie manuelle : elle fait foi, on repart d'un compteur neuf
+      r.per = per100 / 100;
+      r.samples = 0;
+      saveRatios();
+      renderSupplies();
+      renderCapacity();
+      renderMargins();
+      setSuppliesStatus('Consommation enregistrée.', 'ok');
+    }
+  });
+
+  suppliesListEl.addEventListener('focusin', function(e){
+    if(e.target.matches('input.g-num')) e.target.select();
+  });
+  suppliesListEl.addEventListener('keydown', function(e){
+    if(e.target.matches('input.g-num') && e.key === 'Enter') e.target.blur();
+  });
+
+  // ---------- Écran Achats ----------
+  var buyLabelEl      = document.getElementById('buy-label');
+  var buySupplyEl     = document.getElementById('buy-supply');
+  var buyQtyEl        = document.getElementById('buy-qty');
+  var buyAmountEl     = document.getElementById('buy-amount');
+  var buyFromCaisseEl = document.getElementById('buy-from-caisse');
+  var buyFromPersoEl  = document.getElementById('buy-from-perso');
+  var buyAddBtn       = document.getElementById('buy-add-btn');
+  var purchaseStatusEl= document.getElementById('purchase-status');
+  var purchaseListEl  = document.getElementById('purchase-list');
+  var purchaseTotalEl = document.getElementById('purchase-total');
+
+  var buyFrom = 'caisse';
+
+  function setPurchaseStatus(msg, kind){
+    purchaseStatusEl.textContent = msg;
+    purchaseStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+
+  function renderBuySupplyOptions(){
+    if(!buySupplyEl) return;
+    var current = buySupplyEl.value;
+    buySupplyEl.innerHTML = '<option value="">Aucune fourniture</option>' +
+      SUPPLIES.map(function(s){
+        return '<option value="'+s.id+'">'+s.name+' ('+s.unit+')</option>';
+      }).join('');
+    if(current && findSupply(current)) buySupplyEl.value = current;
+  }
+
+  buyFromCaisseEl.addEventListener('click', function(){
+    buyFrom = 'caisse';
+    buyFromCaisseEl.classList.add('on');
+    buyFromPersoEl.classList.remove('on');
+  });
+  buyFromPersoEl.addEventListener('click', function(){
+    buyFrom = 'perso';
+    buyFromPersoEl.classList.add('on');
+    buyFromCaisseEl.classList.remove('on');
+  });
+
+  buyAddBtn.addEventListener('click', function(){
+    var amount = parseNum(buyAmountEl.value);
+    if(amount === null || amount <= 0){
+      setPurchaseStatus('Indiquez le montant dépensé — exemple : 24,50', 'err');
+      return;
+    }
+    var supId = buySupplyEl.value;
+    var qty = parseNum(buyQtyEl.value);
+    var label = buyLabelEl.value.trim();
+    var s = supId ? findSupply(supId) : null;
+
+    if(s && (qty === null || qty <= 0)){
+      setPurchaseStatus('Indiquez la quantité achetée de « '+s.name+' ».', 'err');
+      return;
+    }
+
+    if(s){
+      // coût moyen pondéré : l'ancien stock garde son coût, le nouveau arrive au prix payé
+      var unitCost = amount / qty;
+      var totalQty = s.qty + qty;
+      s.avgCost = totalQty > 0
+        ? ((s.qty * s.avgCost) + amount) / totalQty
+        : unitCost;
+      s.qty = totalQty;
+      saveSupplies();
+      if(!label) label = 'Achat ' + s.name;
+    }
+    if(!label) label = 'Dépense';
+
+    cash.movements.unshift({
+      id: 'm' + Date.now(),
+      type: 'achat',
+      from: buyFrom,
+      label: label,
+      amount: amount,
+      supplyId: supId || null,
+      supplyName: s ? s.name : null,
+      qty: s ? qty : null,
+      time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+    });
+    saveCash();
+
+    buyLabelEl.value = ''; buyQtyEl.value = ''; buyAmountEl.value = '';
+    renderPurchases();
+    renderSupplies();
+    renderCapacity();
+    renderAlerts();
+    renderMargins();
+    renderCash();
+    renderMovements();
+    setPurchaseStatus(s
+      ? 'Achat enregistré — ' + s.name + ' remonté à ' + numToText(s.qty) + ' ' + s.unit + '.'
+      : 'Dépense enregistrée.', 'ok');
+  });
+
+  function renderPurchases(){
+    if(!purchaseListEl) return;
+    var achats = cash.movements.filter(function(m){ return m.type === 'achat'; });
+    if(achats.length === 0){
+      purchaseListEl.innerHTML = '<p class="empty-hint">Aucun achat enregistré aujourd\'hui.</p>';
+      purchaseTotalEl.textContent = formatEuro(0);
+      return;
+    }
+    purchaseListEl.innerHTML = achats.map(function(m){
+      var detail = m.supplyName ? ' · ' + numToText(m.qty) + ' ' + m.supplyName : '';
+      var payeur = m.from === 'perso' ? ' · de ma poche' : '';
+      return '<div class="money-line">' +
+        '<span class="money-label">'+m.label+'<br><span class="money-time">'+m.time+detail+payeur+'</span></span>' +
+        '<span class="money-amount out">−'+formatEuro(m.amount)+'</span>' +
+        '<button class="mini-btn" data-moveaction="del" data-id="'+m.id+'">✕</button>' +
+      '</div>';
+    }).join('');
+    var total = achats.reduce(function(sum, m){ return sum + m.amount; }, 0);
+    purchaseTotalEl.textContent = formatEuro(total);
+  }
+
+  purchaseListEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-moveaction="del"]');
+    if(btn) removeMovement(btn.dataset.id);
+  });
+
+  // Supprimer un achat annule aussi son effet sur le stock, sinon les quantités
+  // dérivent sans qu'on s'en aperçoive.
+  function removeMovement(id){
+    var mv = null;
+    cash.movements.forEach(function(m){ if(m.id === id) mv = m; });
+    if(!mv) return;
+    if(mv.type === 'achat' && mv.supplyId){
+      var s = findSupply(mv.supplyId);
+      if(s){
+        var remaining = s.qty - mv.qty;
+        if(remaining > 0){
+          s.avgCost = ((s.qty * s.avgCost) - mv.amount) / remaining;
+          if(!isFinite(s.avgCost) || s.avgCost < 0) s.avgCost = 0;
+        } else {
+          s.avgCost = 0;
+        }
+        s.qty = Math.max(0, remaining);
+        saveSupplies();
+      }
+    }
+    cash.movements = cash.movements.filter(function(m){ return m.id !== id; });
+    saveCash();
+    renderPurchases();
+    renderMovements();
+    renderCash();
+    renderSupplies();
+    renderCapacity();
+    renderAlerts();
+    renderMargins();
+  }
+
+  // ---------- Écran Argent ----------
+  var cashOpeningEl  = document.getElementById('cash-opening');
+  var cashKpisEl     = document.getElementById('cash-kpis');
+  var cashStatusEl   = document.getElementById('cash-status');
+  var moveLabelEl    = document.getElementById('move-label');
+  var moveAmountEl   = document.getElementById('move-amount');
+  var moveRetraitEl  = document.getElementById('move-type-retrait');
+  var moveApportEl   = document.getElementById('move-type-apport');
+  var moveAddBtn     = document.getElementById('move-add-btn');
+  var moveStatusEl   = document.getElementById('move-status');
+  var movementsListEl= document.getElementById('movements-list');
+  var marginListEl   = document.getElementById('margin-list');
+
+  var moveType = 'retrait';
+
+  function setCashStatus(msg, kind){
+    cashStatusEl.textContent = msg;
+    cashStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+  function setMoveStatus(msg, kind){
+    moveStatusEl.textContent = msg;
+    moveStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+
+  function kpi(label, value, cls){
+    return '<div class="kpi'+(cls ? ' '+cls : '')+'">' +
+      '<div class="kpi-label">'+label+'</div>' +
+      '<div class="kpi-value">'+value+'</div>' +
+    '</div>';
+  }
+
+  function renderCash(){
+    if(!cashKpisEl) return;
+    if(document.activeElement !== cashOpeningEl) cashOpeningEl.value = numToText(cash.opening);
+    var c = cashSummary();
+    cashKpisEl.innerHTML =
+      kpi('Encaissé aujourd\'hui', formatEuro(c.revenue), 'good') +
+      kpi('Sorti de la caisse', formatEuro(c.depensesCaisse + c.retraits), 'bad') +
+      kpi('Payé de ma poche', formatEuro(c.depensesPerso)) +
+      kpi('Devrait être en caisse', formatEuro(c.expected), 'strong');
+  }
+
+  cashOpeningEl.addEventListener('change', function(){
+    var v = parseNum(cashOpeningEl.value);
+    if(v === null || v < 0){
+      cashOpeningEl.value = numToText(cash.opening);
+      setCashStatus('Montant invalide — exemple : 50', 'err');
+      return;
+    }
+    cash.opening = v;
+    cashOpeningEl.value = numToText(v);
+    saveCash();
+    renderCash();
+    renderCount();
+    setCashStatus('Fond de caisse enregistré.', 'ok');
+  });
+  cashOpeningEl.addEventListener('focusin', function(){ cashOpeningEl.select(); });
+
+  moveRetraitEl.addEventListener('click', function(){
+    moveType = 'retrait';
+    moveRetraitEl.classList.add('on');
+    moveApportEl.classList.remove('on');
+  });
+  moveApportEl.addEventListener('click', function(){
+    moveType = 'apport';
+    moveApportEl.classList.add('on');
+    moveRetraitEl.classList.remove('on');
+  });
+
+  moveAddBtn.addEventListener('click', function(){
+    var amount = parseNum(moveAmountEl.value);
+    if(amount === null || amount <= 0){
+      setMoveStatus('Indiquez un montant — exemple : 100', 'err');
+      return;
+    }
+    cash.movements.unshift({
+      id: 'm' + Date.now(),
+      type: moveType,
+      label: moveLabelEl.value.trim() || (moveType === 'retrait' ? 'Retrait' : 'Apport'),
+      amount: amount,
+      time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+    });
+    saveCash();
+    moveLabelEl.value = ''; moveAmountEl.value = '';
+    renderMovements();
+    renderCash();
+    renderCount();
+    setMoveStatus(moveType === 'retrait' ? 'Retrait enregistré.' : 'Apport enregistré.', 'ok');
+  });
+
+  function renderMovements(){
+    if(!movementsListEl) return;
+    if(cash.movements.length === 0){
+      movementsListEl.innerHTML = '<p class="empty-hint">Aucun mouvement aujourd\'hui.</p>';
+      return;
+    }
+    movementsListEl.innerHTML = cash.movements.map(function(m){
+      var isIn = m.type === 'apport';
+      var sign = isIn ? '+' : '−';
+      var cls = isIn ? 'in' : 'out';
+      var kindLabel = m.type === 'achat' ? 'Achat' : (m.type === 'retrait' ? 'Retrait' : 'Apport');
+      var perso = (m.type === 'achat' && m.from === 'perso') ? ' · de ma poche' : '';
+      return '<div class="money-line">' +
+        '<span class="money-label">'+m.label+'<br><span class="money-time">'+kindLabel+' · '+m.time+perso+'</span></span>' +
+        '<span class="money-amount '+cls+'">'+sign+formatEuro(m.amount)+'</span>' +
+        '<button class="mini-btn" data-moveaction="del" data-id="'+m.id+'">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  movementsListEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-moveaction="del"]');
+    if(btn) removeMovement(btn.dataset.id);
+  });
+
+  function renderMargins(){
+    if(!marginListEl) return;
+    if(PRODUCTS.length === 0){
+      marginListEl.innerHTML = '<p class="empty-hint">Aucun produit sur la carte.</p>';
+      return;
+    }
+    marginListEl.innerHTML = PRODUCTS.map(function(p){
+      if(!productCostKnown(p.id)){
+        return '<div class="money-line"><span class="money-label">'+p.name+'<br><span class="money-time">coût inconnu — rattachez des matières et enregistrez un achat</span></span>' +
+          '<span class="money-amount">'+formatEuro(p.price)+'</span></div>';
+      }
+      var cost = productCost(p.id);
+      var margin = p.price - cost;
+      var pct = p.price > 0 ? Math.round((margin / p.price) * 100) : 0;
+      return '<div class="money-line">' +
+        '<span class="money-label">'+p.name+'<br><span class="money-time">vendu '+formatEuro(p.price)+' · coûte '+formatEuro(cost)+'</span></span>' +
+        '<span class="money-amount '+(margin >= 0 ? 'in' : 'out')+'">'+formatEuro(margin)+' ('+pct+'%)</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ---------- Fin de journée : bilan, consommation, comptage ----------
+  var bilanKpisEl   = document.getElementById('bilan-kpis');
+  var usageListEl   = document.getElementById('usage-list');
+  var usageSaveBtn  = document.getElementById('usage-save-btn');
+  var usageStatusEl = document.getElementById('usage-status');
+  var countRealEl   = document.getElementById('count-real');
+  var countKpisEl   = document.getElementById('count-kpis');
+  var countStatusEl = document.getElementById('count-status');
+
+  function setUsageStatus(msg, kind){
+    usageStatusEl.textContent = msg;
+    usageStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+  function setCountStatus(msg, kind){
+    countStatusEl.textContent = msg;
+    countStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+
+  function renderBilan(){
+    if(!bilanKpisEl) return;
+    var d = dayCostAndMargin();
+    var c = cashSummary();
+    var pct = d.revenue > 0 ? Math.round((d.margin / d.revenue) * 100) : 0;
+    bilanKpisEl.innerHTML =
+      kpi('Chiffre d\'affaires', formatEuro(d.revenue), 'good') +
+      kpi('Coût des matières', formatEuro(d.cost), 'bad') +
+      kpi('Dépenses du jour', formatEuro(c.depensesTotal), 'bad') +
+      kpi('Marge estimée', formatEuro(d.margin) + ' (' + pct + '%)', 'strong');
+  }
+
+  function renderUsageForm(){
+    if(!usageListEl) return;
+    if(SUPPLIES.length === 0){
+      usageListEl.innerHTML = '<p class="empty-hint">Aucune matière ni consommable enregistré. Ajoutez-en dans Gestion → Stock.</p>';
+      usageSaveBtn.classList.add('hidden');
+      return;
+    }
+    usageSaveBtn.classList.remove('hidden');
+    var sold = soldQtyById();
+    usageListEl.innerHTML = SUPPLIES.map(function(s){
+      // consommation théorique : ce que les ratios connus prévoyaient
+      var expected = 0, hasRatio = false;
+      linkedProductIds(s.id).forEach(function(pid){
+        var r = ratioFor(s.id, pid);
+        if(r && r.per > 0){ hasRatio = true; expected += r.per * (sold[pid] || 0); }
+      });
+      var hint = hasRatio
+        ? 'prévu environ ' + numToText(Math.round(expected * 100) / 100) + ' ' + s.unit
+        : 'pas encore de repère';
+      return '<div class="g-row">' +
+        '<span class="g-row-name">'+s.name+'</span>' +
+        '<input class="g-num" data-usage-id="'+s.id+'" type="text" inputmode="decimal" autocomplete="off" placeholder="0">' +
+        '<span class="g-unit">'+s.unit+'</span>' +
+        '<span class="g-row-sub">en stock '+numToText(s.qty)+' '+s.unit+' · '+hint+'</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Le cœur de l'apprentissage : on rapproche ce qui a été consommé de ce qui a
+  // été vendu, et on en tire la consommation par portion. Quand plusieurs
+  // produits partagent une matière, la répartition est proportionnelle aux
+  // repères déjà connus — c'est une estimation, qui se précise jour après jour.
+  function applyUsage(entries){
+    var sold = soldQtyById();
+    var touched = 0;
+
+    entries.forEach(function(entry){
+      var s = findSupply(entry.id);
+      if(!s || entry.used <= 0) return;
+
+      s.qty = Math.max(0, s.qty - entry.used);
+      touched++;
+      if(!state.usage) state.usage = {};
+      state.usage[s.id] = (state.usage[s.id] || 0) + entry.used;
+
+      var pids = linkedProductIds(s.id).filter(function(pid){ return (sold[pid] || 0) > 0; });
+      if(pids.length === 0) return;
+
+      var expected = 0;
+      pids.forEach(function(pid){
+        var r = ratioFor(s.id, pid);
+        expected += (r && r.per > 0 ? r.per : 0) * sold[pid];
+      });
+
+      var observed = {};
+      if(expected > 0){
+        var factor = entry.used / expected;
+        pids.forEach(function(pid){
+          var r = ratioFor(s.id, pid);
+          observed[pid] = (r.per > 0 ? r.per : 0) * factor;
+        });
+      } else {
+        // aucun repère : on répartit à parts égales par portion vendue
+        var totalSold = pids.reduce(function(sum, pid){ return sum + sold[pid]; }, 0);
+        if(totalSold <= 0) return;
+        var flat = entry.used / totalSold;
+        pids.forEach(function(pid){ observed[pid] = flat; });
+      }
+
+      pids.forEach(function(pid){
+        var r = ratioFor(s.id, pid);
+        if(!r) return;
+        if(r.samples > 0){
+          // moyenne glissante : les 10 dernières journées pèsent, pas tout l'historique
+          var n = Math.min(r.samples, 10);
+          r.per = ((r.per * n) + observed[pid]) / (n + 1);
+          r.samples = r.samples + 1;
+        } else {
+          r.per = observed[pid];
+          r.samples = 1;
+        }
+        r.per = Math.round(r.per * 1000000) / 1000000;
+      });
+    });
+
+    saveSupplies();
+    saveRatios();
+    saveState();
+    return touched;
+  }
+
+  usageSaveBtn.addEventListener('click', function(){
+    var inputs = usageListEl.querySelectorAll('input[data-usage-id]');
+    var entries = [], invalid = false;
+    inputs.forEach(function(inp){
+      var raw = inp.value.trim();
+      if(!raw) return;
+      var v = parseNum(raw);
+      if(v === null || v < 0){ invalid = true; return; }
+      entries.push({ id: inp.dataset.usageId, used: v });
+    });
+    if(invalid){
+      setUsageStatus('Une des quantités est invalide — indiquez un nombre, par exemple 5.', 'err');
+      return;
+    }
+    if(entries.length === 0){
+      setUsageStatus('Saisissez au moins une quantité utilisée.', 'err');
+      return;
+    }
+    var touched = applyUsage(entries);
+    renderUsageForm();
+    renderSupplies();
+    renderCapacity();
+    renderAlerts();
+    renderMargins();
+    renderBilan();
+    setUsageStatus(touched + ' article' + (touched > 1 ? 's' : '') + ' mis à jour. Le stock a été déduit et les repères de consommation affinés.', 'ok');
+  });
+
+  usageListEl.addEventListener('focusin', function(e){
+    if(e.target.matches('input.g-num')) e.target.select();
+  });
+  usageListEl.addEventListener('keydown', function(e){
+    if(e.target.matches('input.g-num') && e.key === 'Enter') e.target.blur();
+  });
+
+  function renderCount(){
+    if(!countKpisEl) return;
+    var c = cashSummary();
+    if(cash.counted === null){
+      countKpisEl.innerHTML =
+        kpi('Devrait être en caisse', formatEuro(c.expected), 'strong') +
+        kpi('Écart', '—');
+      return;
+    }
+    var ecart = Math.round((cash.counted - c.expected) * 100) / 100;
+    var label = ecart === 0 ? 'Compte juste' : (ecart > 0 ? 'En trop' : 'Il manque');
+    countKpisEl.innerHTML =
+      kpi('Devrait être en caisse', formatEuro(c.expected), 'strong') +
+      kpi(label, formatEuro(Math.abs(ecart)), ecart === 0 ? 'good' : 'bad');
+  }
+
+  countRealEl.addEventListener('change', function(){
+    var v = parseNum(countRealEl.value);
+    if(v === null || v < 0){
+      countRealEl.value = '';
+      cash.counted = null;
+      saveCash();
+      renderCount();
+      setCountStatus('Montant invalide — exemple : 312,50', 'err');
+      return;
+    }
+    cash.counted = v;
+    countRealEl.value = numToText(v);
+    saveCash();
+    renderCount();
+    setCountStatus('Comptage enregistré.', 'ok');
+  });
+  countRealEl.addEventListener('focusin', function(){ countRealEl.select(); });
+
+  // Après une vente, les écrans de gestion ouverts doivent suivre.
+  function refreshGestion(){
+    if(currentView === 'argent'){ renderCash(); renderMovements(); }
+    if(currentView === 'fin'){ renderBilan(); renderUsageForm(); renderCount(); }
+    if(currentView === 'stock') renderCapacity();
+  }
+
   // ---------- Sauvegarde GitHub ----------
   var CFG_KEY = 'mamazan_github_cfg_v1';
 
@@ -1619,6 +2951,63 @@
     lines.push('');
     lines.push('**Chiffre d\'affaires : '+formatEuro(s.revenue)+'**');
     lines.push('');
+
+    var money = cashSummary();
+    var dcm = dayCostAndMargin();
+
+    lines.push('## Argent');
+    lines.push('');
+    lines.push('- Fond de caisse : '+formatEuro(cash.opening));
+    lines.push('- Encaissé : '+formatEuro(money.revenue));
+    lines.push('- Dépenses payées avec la caisse : '+formatEuro(money.depensesCaisse));
+    lines.push('- Dépenses payées de ma poche : '+formatEuro(money.depensesPerso));
+    lines.push('- Retraits : '+formatEuro(money.retraits));
+    lines.push('- Apports : '+formatEuro(money.apports));
+    lines.push('- **Devrait être en caisse : '+formatEuro(money.expected)+'**');
+    if(cash.counted !== null){
+      var ecart = Math.round((cash.counted - money.expected) * 100) / 100;
+      lines.push('- Compté réellement : '+formatEuro(cash.counted));
+      lines.push('- **Écart : '+formatEuro(ecart)+'**');
+    }
+    lines.push('');
+    lines.push('- Coût des matières (estimé) : '+formatEuro(dcm.cost));
+    lines.push('- **Marge estimée : '+formatEuro(dcm.margin)+'**');
+    lines.push('');
+
+    if(cash.movements.length){
+      lines.push('## Mouvements');
+      lines.push('');
+      lines.push('| Heure | Type | Libellé | Montant |');
+      lines.push('|-------|------|---------|---------|');
+      for(var k = cash.movements.length - 1; k >= 0; k--){
+        var m = cash.movements[k];
+        var kindLabel = m.type === 'achat' ? 'Achat' : (m.type === 'retrait' ? 'Retrait' : 'Apport');
+        lines.push('| '+m.time+' | '+kindLabel+' | '+m.label+' | '+formatEuro(m.amount)+' |');
+      }
+      lines.push('');
+    }
+
+    var usageKeys = Object.keys(state.usage || {});
+    if(usageKeys.length){
+      lines.push('## Consommation saisie');
+      lines.push('');
+      usageKeys.forEach(function(supId){
+        var sup = findSupply(supId);
+        lines.push('- '+(sup ? sup.name : supId)+' : '+numToText(state.usage[supId])+(sup ? ' '+sup.unit : ''));
+      });
+      lines.push('');
+    }
+
+    if(SUPPLIES.length){
+      lines.push('## Stock restant');
+      lines.push('');
+      SUPPLIES.forEach(function(sup){
+        var flag = (sup.alertAt > 0 && sup.qty <= sup.alertAt) ? ' — À RACHETER' : '';
+        lines.push('- '+sup.name+' : '+numToText(sup.qty)+' '+sup.unit+flag);
+      });
+      lines.push('');
+    }
+
     return lines.join('\n');
   }
 
@@ -1738,6 +3127,18 @@
   renderAll();
   renderArchive();
   renderStock();
+  renderSupplies();
+  renderCapacity();
+  renderBuySupplyOptions();
+  renderPurchases();
+  renderCash();
+  renderMovements();
+  renderMargins();
+  renderBilan();
+  renderUsageForm();
+  renderCount();
+  renderAlerts();
+  if(cash.counted !== null && countRealEl) countRealEl.value = numToText(cash.counted);
 
   // ---------- Mise en cache hors-ligne ----------
   if('serviceWorker' in navigator){
