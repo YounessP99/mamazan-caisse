@@ -746,6 +746,42 @@
   #reset-confirm-yes:active{ background:var(--terracotta-dark); }
   #reset-confirm-no{ background:var(--cream); color:var(--terracotta); }
   #reset-confirm-no:active{ background:#f0dcd4; }
+
+  /* ---- Commandes à l'avance ---- */
+  .tab-count{
+    display:inline-block;
+    margin-left:8px; min-width:24px; padding:2px 7px;
+    border-radius:999px;
+    background:var(--terracotta); color:var(--cream);
+    font-size:.85rem; font-weight:800; line-height:1.3;
+    opacity:1;
+  }
+  .pre-card.done{ opacity:.6; }
+  .pre-time{ flex:0 0 auto; min-width:64px; font-size:1.25rem; font-weight:800; }
+  .pre-actions{ flex:1 1 100%; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .pre-actions .mini-btn{ min-width:48px; min-height:48px; }
+  .g-tag.pre-tag.doing{ background:rgba(178,58,47,.12); color:var(--terracotta); }
+  .g-tag.pre-tag.ready{ background:var(--green); color:var(--cream); }
+  .pre-products{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .pre-field{
+    flex:1 1 150px;
+    display:flex; flex-direction:column; gap:4px;
+    font-size:.85rem; font-weight:700; color:#8a7b63;
+  }
+  .pre-date{
+    flex:1 1 150px; min-width:0;
+    min-height:46px; padding:0 10px;
+    border:2px solid var(--line); border-radius:10px;
+    background:var(--cream); color:var(--green);
+    font-size:1rem; font-weight:700;
+  }
+  #view-commandes input{ -webkit-user-select:text; user-select:text; }
+
+  /* quatre onglets : on libère de la place en portrait */
+  @media (max-width: 900px){
+    header > span{ display:none; }
+    .tab-btn{ padding:0 12px; }
+  }
 </style>
 </head>
 <body>
@@ -786,6 +822,7 @@
     <span>Caisse locale</span>
     <nav id="tabs">
       <button id="tab-caisse" class="tab-btn active">Caisse</button>
+      <button id="tab-commandes" class="tab-btn">Commandes<span id="tab-commandes-count" class="tab-count hidden"></span></button>
       <button id="tab-gestion" class="tab-btn">Gestion</button>
       <button id="tab-fin" class="tab-btn">Fin de journée</button>
     </nav>
@@ -825,6 +862,54 @@
       <div class="panel" id="history-panel">
         <h2>Commandes du jour</h2>
         <div id="history-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-commandes" class="hidden">
+    <div class="col col-left">
+      <div class="panel hidden" id="pre-past-panel">
+        <h2>Jours précédents, pas remises</h2>
+        <div id="pre-past-list"></div>
+      </div>
+
+      <div class="panel" id="pre-list-panel">
+        <h2>Commandes à retirer</h2>
+        <div class="seg">
+          <button class="seg-btn on" id="pre-day-today">Aujourd'hui</button>
+          <button class="seg-btn" id="pre-day-tomorrow">Demain</button>
+          <input id="pre-day-date" class="pre-date" type="date">
+        </div>
+        <p id="pre-day-label" class="g-hint"></p>
+        <p id="pre-day-todo" class="g-hint hidden"></p>
+        <div id="pre-list"></div>
+      </div>
+    </div>
+
+    <div class="col col-right">
+      <div class="panel" id="pre-form-panel">
+        <h2 id="pre-form-title">Nouvelle commande</h2>
+        <div class="g-form">
+          <input id="pre-name" type="text" autocapitalize="words" autocorrect="off" autocomplete="off" placeholder="Nom du client">
+          <input id="pre-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Téléphone">
+          <div class="seg">
+            <button class="seg-btn on" id="pre-date-tomorrow">Demain</button>
+            <button class="seg-btn" id="pre-date-today">Aujourd'hui</button>
+          </div>
+          <label class="pre-field">Retrait le
+            <input id="pre-date" type="date">
+          </label>
+          <label class="pre-field">à
+            <input id="pre-time" type="time">
+          </label>
+        </div>
+        <div id="pre-products" class="pre-products"></div>
+        <div id="pre-lines"></div>
+        <div class="total-line"><span>Total</span><span id="pre-total">0,00 €</span></div>
+        <button class="g-btn wide" id="pre-save-btn">Enregistrer la commande</button>
+        <button class="g-btn ghost wide hidden" id="pre-cancel-edit-btn">Abandonner la modification</button>
+        <p id="pre-status" class="g-status"></p>
+        <p class="g-hint">Le paiement se fait au retrait. Les produits suivis en stock sont mis de côté pour les commandes du jour : la caisse ne les propose plus au comptoir. Le téléphone reste sur cette tablette, il n'est jamais envoyé dans la sauvegarde.</p>
       </div>
     </div>
   </main>
@@ -1140,12 +1225,12 @@
   var outForceBtn     = document.getElementById('out-force-btn');
 
   // ---------- Stock ----------
-  // Quantité encore disponible, panier en cours déduit.
+  // Quantité encore disponible, panier en cours et commandes du jour déduits.
   // Infinity pour les articles non suivis : ils ne sont jamais bloqués.
   function available(id){
     var p = findProduct(id);
     if(!p || !p.tracked) return Infinity;
-    return p.stock - (state.cart[id] || 0);
+    return p.stock - (state.cart[id] || 0) - reservedQty(id);
   }
 
   // ---------- Rendu ----------
@@ -1213,6 +1298,7 @@
     }
     historyEl.innerHTML = state.orders.map(function(order){
       var detail = order.items.map(function(it){ return it.qty+'× '+it.name; }).join(', ');
+      if(order.customer) detail = 'Commande de ' + escapeHtml(order.customer) + ' — ' + detail;
       var isPending = pendingDelete === order.number;
       var actionsHtml;
       if(isPending){
@@ -1288,7 +1374,7 @@
     saveState();
     renderCart();
     var p = findProduct(id);
-    if(p && p.tracked && v > p.stock) showToast('Stock dépassé : ' + p.name);
+    if(p && p.tracked && v > p.stock - reservedQty(id)) showToast('Stock dépassé : ' + p.name);
   }
 
   // Ajout au panier, avec alerte si le stock suivi ne suit pas.
@@ -1351,6 +1437,7 @@
         if(p && p.tracked) p.stock += it.qty;
       });
       saveProducts();
+      if(order.preorderId) preorderBackToReady(order.preorderId);
     }
     state.orders = state.orders.filter(function(o){ return o.number !== number; });
     saveState();
@@ -1363,6 +1450,8 @@
     var order = null;
     state.orders.forEach(function(o){ if(o.number === number) order = o; });
     if(!order) return;
+    // une commande à l'avance remise : on annule la remise, on ne remplit pas le panier
+    if(order.preorderId){ cancelPreorderSale(order); return; }
 
     order.items.forEach(function(it){
       var p = findProduct(it.id);
@@ -1609,6 +1698,7 @@
     changeReceivedEl.value = '';
     changeResultEl.textContent = '';
     changeResultEl.className = 'change-result';
+    changeBackBtn.textContent = order.preorderId ? 'Annuler la remise' : 'Modifier la commande';
     changeOverlayEl.classList.remove('hidden');
     setTimeout(function(){ changeReceivedEl.focus(); }, 50);
   }
@@ -1663,12 +1753,14 @@
     var left = available(id);
     if(left < 0) left = 0;
     pendingAdd = { id:id, qty:qty, silent:silent };
+    var reserved = reservedQty(id);
+    var note = reserved > 0 ? ' ' + reserved + ' sont mis de côté pour des commandes à retirer aujourd\'hui.' : '';
     if(left === 0){
       outTitleEl.textContent = 'Épuisé';
-      outMsgEl.textContent = 'Il n\'y a plus de ' + p.name + '. Prévenez le client.';
+      outMsgEl.textContent = 'Il n\'y a plus de ' + p.name + '. Prévenez le client.' + note;
     } else {
       outTitleEl.textContent = 'Stock insuffisant';
-      outMsgEl.textContent = 'Il ne reste que ' + left + ' ' + p.name + ' en stock.';
+      outMsgEl.textContent = 'Il ne reste que ' + left + ' ' + p.name + ' en stock.' + note;
     }
     outOverlayEl.classList.remove('hidden');
   }
@@ -1693,6 +1785,7 @@
 
   var views = {
     caisse:   document.getElementById('view-caisse'),
+    commandes:document.getElementById('view-commandes'),
     produits: document.getElementById('view-produits'),
     stock:    document.getElementById('view-stock'),
     achats:   document.getElementById('view-achats'),
@@ -1700,6 +1793,7 @@
     fin:      document.getElementById('view-fin')
   };
   var tabCaisse  = document.getElementById('tab-caisse');
+  var tabCommandes = document.getElementById('tab-commandes');
   var tabGestion = document.getElementById('tab-gestion');
   var tabFin     = document.getElementById('tab-fin');
   var subnavEl   = document.getElementById('subnav');
@@ -1717,6 +1811,7 @@
       views[k].classList.toggle('hidden', k !== name);
     });
     tabCaisse.classList.toggle('active', name === 'caisse');
+    tabCommandes.classList.toggle('active', name === 'commandes');
     tabGestion.classList.toggle('active', inGestion);
     tabFin.classList.toggle('active', name === 'fin');
     subnavEl.classList.toggle('hidden', !inGestion);
@@ -1725,6 +1820,7 @@
     });
 
     hideResetConfirm();
+    if(name === 'commandes'){ pendingPreCancel = null; renderPreorders(); renderPreForm(); }
     if(name === 'produits') renderManageProducts();
     if(name === 'stock'){ setStockStatus('', ''); renderStock(); renderSupplies(); renderCapacity(); }
     if(name === 'achats'){ setPurchaseStatus('', ''); renderBuySupplyOptions(); renderPurchases(); }
@@ -1734,6 +1830,7 @@
   }
 
   tabCaisse.addEventListener('click', function(){ showView('caisse'); });
+  tabCommandes.addEventListener('click', function(){ showView('commandes'); });
   tabGestion.addEventListener('click', function(){ showView(lastGestionView); });
   tabFin.addEventListener('click', function(){ showView('fin'); });
 
@@ -1885,8 +1982,10 @@
     stockListEl.innerHTML = PRODUCTS.map(function(p){
       var right;
       if(p.tracked){
+        var reserved = reservedQty(p.id);
         right = '<input class="stock-input'+(p.stock<=0?' empty':'')+'" type="text" inputmode="numeric" pattern="[0-9]*" data-id="'+p.id+'" value="'+p.stock+'">' +
-                '<button class="stock-zero-btn" data-saction="zero" data-id="'+p.id+'">Remettre à 0</button>';
+                '<button class="stock-zero-btn" data-saction="zero" data-id="'+p.id+'">Remettre à 0</button>' +
+                (reserved > 0 ? '<span class="stock-unlimited">dont '+reserved+' mis de côté pour les commandes du jour</span>' : '');
       } else {
         right = '<span class="stock-unlimited">Quantité illimitée</span>';
       }
@@ -2886,7 +2985,569 @@
     if(currentView === 'argent'){ renderCash(); renderMovements(); }
     if(currentView === 'fin'){ renderBilan(); renderUsageForm(); renderCount(); }
     if(currentView === 'stock') renderCapacity();
+    if(currentView === 'commandes') renderPreorders();
   }
+
+  // ================= COMMANDES À L'AVANCE =================
+  // Commandes prises à l'avance (souvent la veille) pour une heure de retrait.
+  // Elles vivent à part de la journée en cours : la clôture n'y touche pas.
+  // Le téléphone ne quitte jamais la tablette : il n'est recopié ni dans la
+  // commande de caisse créée à la remise, ni dans la sauvegarde GitHub.
+
+  var PREORDERS_KEY = 'mamazan_preorders_v1';
+  var PREORDER_STATUSES = ['todo', 'doing', 'ready', 'done', 'cancelled'];
+  var PREORDER_LABELS = { todo:'À préparer', doing:'En cours', ready:'Prête', done:'Remise', cancelled:'Annulée' };
+  var PREORDER_KEEP_DAYS = 14; // les commandes remises ou annulées sont oubliées après 14 jours
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function dateKey(d){
+    var m = String(d.getMonth()+1); if(m.length<2) m='0'+m;
+    var j = String(d.getDate());   if(j.length<2) j='0'+j;
+    return d.getFullYear()+'-'+m+'-'+j;
+  }
+
+  function dayOffsetKey(n){
+    var d = new Date();
+    d.setDate(d.getDate() + n);
+    return dateKey(d);
+  }
+
+  function dayLabel(key){
+    if(key === dayOffsetKey(0)) return 'aujourd\'hui';
+    if(key === dayOffsetKey(1)) return 'demain';
+    var parts = String(key).split('-');
+    if(parts.length !== 3) return 'à une date inconnue';
+    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    return 'le ' + d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  }
+
+  function shortDate(key){
+    var parts = String(key).split('-');
+    return parts.length === 3 ? parts[2] + '/' + parts[1] : '?';
+  }
+
+  function preorderTotal(items){
+    var t = items.reduce(function(sum, it){ return sum + it.price * it.qty; }, 0);
+    return Math.round(t * 100) / 100;
+  }
+
+  // Le prix est figé à l'enregistrement : c'est celui annoncé au client.
+  function normalizePreorderItem(it){
+    if(!it || typeof it.id !== 'string') return null;
+    var qty = Math.round(numOrZero(it.qty));
+    if(qty <= 0) return null;
+    var p = findProduct(it.id);
+    var price = numOrZero(it.price);
+    if(!(price > 0)) price = p ? p.price : 0;
+    return {
+      id: it.id,
+      name: (typeof it.name === 'string' && it.name) ? it.name : (p ? p.name : it.id),
+      price: price,
+      qty: qty
+    };
+  }
+
+  function normalizePreorder(o){
+    if(!o || typeof o.id !== 'string' || !Array.isArray(o.items)) return null;
+    var items = o.items.map(normalizePreorderItem).filter(function(it){ return it !== null; });
+    if(items.length === 0) return null;
+    return {
+      id: o.id,
+      customer: typeof o.customer === 'string' ? o.customer : '',
+      phone: typeof o.phone === 'string' ? o.phone : '',
+      pickupDate: (typeof o.pickupDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.pickupDate)) ? o.pickupDate : '',
+      pickupTime: (typeof o.pickupTime === 'string' && /^\d{2}:\d{2}$/.test(o.pickupTime)) ? o.pickupTime : '',
+      items: items,
+      total: preorderTotal(items),
+      status: PREORDER_STATUSES.indexOf(o.status) !== -1 ? o.status : 'todo',
+      createdAt: typeof o.createdAt === 'string' ? o.createdAt : '',
+      startedAt: typeof o.startedAt === 'string' ? o.startedAt : null,
+      deliveredAt: typeof o.deliveredAt === 'string' ? o.deliveredAt : null,
+      orderNumber: (typeof o.orderNumber === 'number' && isFinite(o.orderNumber)) ? o.orderNumber : null
+    };
+  }
+
+  function loadPreorders(){
+    try {
+      var raw = localStorage.getItem(PREORDERS_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          var cutoff = dayOffsetKey(-PREORDER_KEEP_DAYS);
+          return parsed.map(normalizePreorder).filter(function(o){
+            if(!o) return false;
+            var finished = o.status === 'done' || o.status === 'cancelled';
+            return !(finished && o.pickupDate && o.pickupDate < cutoff);
+          });
+        }
+      }
+    } catch(e){}
+    return [];
+  }
+
+  function savePreorders(){
+    try { localStorage.setItem(PREORDERS_KEY, JSON.stringify(PREORDERS)); } catch(e){}
+  }
+
+  var PREORDERS = loadPreorders();
+
+  function findPreorder(id){
+    for(var i=0;i<PREORDERS.length;i++){ if(PREORDERS[i].id === id) return PREORDERS[i]; }
+    return null;
+  }
+
+  function isActivePreorder(o){
+    return o.status === 'todo' || o.status === 'doing' || o.status === 'ready';
+  }
+
+  // Quantité promise aux commandes du jour pas encore remises : la caisse ne
+  // doit pas la revendre au comptoir. Calculée à chaque fois, jamais écrite,
+  // pour qu'elle suive d'elle-même le stock du matin, les modifications et
+  // les annulations.
+  function reservedQty(productId){
+    var today = dayOffsetKey(0), n = 0;
+    PREORDERS.forEach(function(o){
+      if(o.pickupDate !== today || !isActivePreorder(o)) return;
+      o.items.forEach(function(it){ if(it.id === productId) n += it.qty; });
+    });
+    return n;
+  }
+
+  function comparePreorders(a, b){
+    if(a.pickupDate !== b.pickupDate) return a.pickupDate < b.pickupDate ? -1 : 1;
+    var ta = a.pickupTime || '99:99', tb = b.pickupTime || '99:99';
+    if(ta !== tb) return ta < tb ? -1 : 1;
+    return a.createdAt < b.createdAt ? -1 : (a.createdAt > b.createdAt ? 1 : 0);
+  }
+
+  // Accepte « 12:30 », « 12h30 », « 12h », « 9:05 ».
+  function parseTime(text){
+    var m = String(text || '').trim().match(/^(\d{1,2})\s*[:hH]\s*(\d{2})?$/);
+    if(!m) return null;
+    var h = parseInt(m[1], 10), min = m[2] ? parseInt(m[2], 10) : 0;
+    if(h > 23 || min > 59) return null;
+    return (h < 10 ? '0' : '') + h + ':' + (min < 10 ? '0' : '') + min;
+  }
+
+  // ---------- Écran Commandes : liste ----------
+  var tabCommandesCountEl = document.getElementById('tab-commandes-count');
+  var prePastPanelEl  = document.getElementById('pre-past-panel');
+  var prePastListEl   = document.getElementById('pre-past-list');
+  var preListEl       = document.getElementById('pre-list');
+  var preDayTodayEl   = document.getElementById('pre-day-today');
+  var preDayTomorrowEl= document.getElementById('pre-day-tomorrow');
+  var preDayDateEl    = document.getElementById('pre-day-date');
+  var preDayLabelEl   = document.getElementById('pre-day-label');
+  var preDayTodoEl    = document.getElementById('pre-day-todo');
+
+  var preListDay = dayOffsetKey(0);
+  var pendingPreCancel = null;
+
+  var NEXT_STEP_LABELS = { todo:'Commencer', doing:'Marquer prête', ready:'Remettre au client' };
+  var BACK_STEP_LABELS = { doing:'Pas encore commencée', ready:'Pas encore prête' };
+
+  function preorderCard(o, withDate){
+    var detail = o.items.map(function(it){ return it.qty + '× ' + escapeHtml(it.name); }).join(', ');
+    var sub = detail + (o.phone ? ' · ' + escapeHtml(o.phone) : '');
+    var actions = '';
+    if(o.status === 'done'){
+      sub += ' · remise' + (o.orderNumber ? ' (commande #' + o.orderNumber + ')' : '');
+    } else if(pendingPreCancel === o.id){
+      actions = '<span class="confirm-text">Annuler la commande ?</span>' +
+        '<button class="mini-btn confirm-yes" data-pre-action="cancel-yes" data-id="'+o.id+'">Oui</button>' +
+        '<button class="mini-btn confirm-no" data-pre-action="cancel-no" data-id="'+o.id+'">Non</button>';
+    } else {
+      actions = '<button class="g-btn'+(o.status === 'ready' ? ' danger' : '')+'" data-pre-action="next" data-id="'+o.id+'">'+NEXT_STEP_LABELS[o.status]+'</button>';
+      if(BACK_STEP_LABELS[o.status]){
+        actions += '<button class="mini-btn edit" data-pre-action="back" data-id="'+o.id+'">'+BACK_STEP_LABELS[o.status]+'</button>';
+      }
+      actions += '<button class="mini-btn edit" data-pre-action="edit" data-id="'+o.id+'">Modifier</button>' +
+        '<button class="mini-btn" data-pre-action="cancel" data-id="'+o.id+'">✕</button>';
+    }
+    var when = (withDate ? shortDate(o.pickupDate) + ' ' : '') + (o.pickupTime || '--:--');
+    return '<div class="g-row pre-card '+o.status+'" data-pre-row="'+o.id+'">' +
+      '<span class="pre-time">'+when+'</span>' +
+      '<span class="g-row-name">'+(o.customer ? escapeHtml(o.customer) : 'Sans nom')+'</span>' +
+      '<span class="g-tag pre-tag '+o.status+'">'+PREORDER_LABELS[o.status]+'</span>' +
+      '<span class="money-amount">'+formatEuro(o.total)+'</span>' +
+      '<span class="g-row-sub">'+sub+'</span>' +
+      (actions ? '<span class="pre-actions">'+actions+'</span>' : '') +
+    '</div>';
+  }
+
+  // Pastille de l'onglet : commandes du jour (ou d'avant) pas encore remises.
+  function renderPreorderBadge(){
+    var today = dayOffsetKey(0);
+    var n = PREORDERS.filter(function(o){
+      return isActivePreorder(o) && o.pickupDate <= today;
+    }).length;
+    tabCommandesCountEl.textContent = n > 0 ? String(n) : '';
+    tabCommandesCountEl.classList.toggle('hidden', n === 0);
+  }
+
+  function renderPreorders(){
+    renderPreorderBadge();
+    if(!preListEl) return;
+    var today = dayOffsetKey(0);
+
+    var past = PREORDERS.filter(function(o){
+      return isActivePreorder(o) && o.pickupDate < today;
+    }).sort(comparePreorders);
+    prePastPanelEl.classList.toggle('hidden', past.length === 0);
+    prePastListEl.innerHTML = past.map(function(o){ return preorderCard(o, true); }).join('');
+
+    preDayTodayEl.classList.toggle('on', preListDay === today);
+    preDayTomorrowEl.classList.toggle('on', preListDay === dayOffsetKey(1));
+    if(document.activeElement !== preDayDateEl) preDayDateEl.value = preListDay;
+
+    var day = PREORDERS.filter(function(o){
+      return o.pickupDate === preListDay && o.status !== 'cancelled';
+    }).sort(comparePreorders);
+    var waiting = day.filter(isActivePreorder).length;
+    preDayLabelEl.textContent = 'Retrait ' + dayLabel(preListDay) + ' : ' +
+      day.length + ' commande' + (day.length > 1 ? 's' : '') +
+      (day.length ? ', dont ' + waiting + ' à remettre' : '') + '.';
+
+    // ce qu'il reste à produire pour ce jour (commandes pas encore prêtes)
+    var qtyById = {}, nameById = {};
+    day.forEach(function(o){
+      if(o.status !== 'todo' && o.status !== 'doing') return;
+      o.items.forEach(function(it){
+        qtyById[it.id] = (qtyById[it.id] || 0) + it.qty;
+        nameById[it.id] = it.name;
+      });
+    });
+    var todoParts = [];
+    PRODUCTS.forEach(function(p){
+      if(qtyById[p.id]){ todoParts.push(qtyById[p.id] + '× ' + escapeHtml(p.name)); delete qtyById[p.id]; }
+    });
+    Object.keys(qtyById).forEach(function(id){ todoParts.push(qtyById[id] + '× ' + escapeHtml(nameById[id])); });
+    preDayTodoEl.innerHTML = todoParts.length ? 'À préparer : ' + todoParts.join(', ') : '';
+    preDayTodoEl.classList.toggle('hidden', todoParts.length === 0);
+
+    preListEl.innerHTML = day.length
+      ? day.map(function(o){ return preorderCard(o, false); }).join('')
+      : '<p class="empty-hint">Aucune commande à retirer ' + dayLabel(preListDay) + '.</p>';
+  }
+
+  function afterPreordersChanged(){
+    savePreorders();
+    renderPreorders();
+    renderCart();   // la réservation change le « reste N » de la caisse
+    renderStock();
+  }
+
+  preDayTodayEl.addEventListener('click', function(){ preListDay = dayOffsetKey(0); renderPreorders(); });
+  preDayTomorrowEl.addEventListener('click', function(){ preListDay = dayOffsetKey(1); renderPreorders(); });
+  preDayDateEl.addEventListener('change', function(){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(preDayDateEl.value)) preListDay = preDayDateEl.value;
+    renderPreorders();
+  });
+
+  // ---------- Écran Commandes : statuts et remise ----------
+  // La remise est une vente comme une autre : numéro, historique, chiffre
+  // d'affaires, stock, consommation de matières, sauvegarde automatique.
+  function deliverPreorder(o){
+    var items = o.items.map(function(it){
+      return { id:it.id, name:it.name, price:it.price, qty:it.qty };
+    });
+    var order = {
+      number: state.nextOrderNumber++,
+      time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }),
+      items: items,
+      total: o.total,
+      preorderId: o.id,
+      customer: o.customer
+    };
+    items.forEach(function(it){
+      var p = findProduct(it.id);
+      if(p && p.tracked) p.stock -= it.qty;
+    });
+    saveProducts();
+
+    o.status = 'done';
+    o.orderNumber = order.number;
+    o.deliveredAt = new Date().toISOString();
+    savePreorders();
+
+    state.orders.unshift(order);
+    saveState();
+    renderAll();
+    renderStock();
+    refreshGestion();
+    renderPreorders();
+    showChangeOverlay(order);
+    maybeAutoBackup();
+  }
+
+  // Une vente issue d'une commande est supprimée ou annulée depuis la caisse :
+  // la commande redevient « prête », sinon les deux listes se contredisent.
+  function preorderBackToReady(id){
+    var o = findPreorder(id);
+    if(!o || o.status !== 'done') return;
+    o.status = 'ready';
+    o.orderNumber = null;
+    o.deliveredAt = null;
+    savePreorders();
+    renderPreorders();
+  }
+
+  function cancelPreorderSale(order){
+    deleteOrder(order.number);
+    if(state.nextOrderNumber === order.number + 1){
+      state.nextOrderNumber = order.number;
+      saveState();
+    }
+    pendingDelete = null;
+    renderAll();
+    renderStock();
+    showView('commandes');
+    showToast('Remise annulée : la commande est de nouveau prête');
+    // la sauvegarde automatique doit repartir : le fichier du jour contient encore cette vente
+    try { localStorage.removeItem(LAST_AUTO_BACKUP_KEY); } catch(e){}
+  }
+
+  function onPreorderAction(e){
+    var btn = e.target.closest('button[data-pre-action]');
+    if(!btn) return;
+    var o = findPreorder(btn.dataset.id);
+    if(!o) return;
+    var action = btn.dataset.preAction;
+
+    if(action === 'next'){
+      if(o.status === 'todo'){
+        o.status = 'doing';
+        o.startedAt = new Date().toISOString();
+      } else if(o.status === 'doing'){
+        o.status = 'ready';
+      } else if(o.status === 'ready'){
+        deliverPreorder(o);
+        return;
+      }
+      afterPreordersChanged();
+    } else if(action === 'back'){
+      if(o.status === 'doing'){ o.status = 'todo'; o.startedAt = null; }
+      else if(o.status === 'ready'){ o.status = 'doing'; }
+      afterPreordersChanged();
+    } else if(action === 'edit'){
+      startEditPreorder(o);
+    } else if(action === 'cancel'){
+      pendingPreCancel = o.id;
+      renderPreorders();
+    } else if(action === 'cancel-no'){
+      pendingPreCancel = null;
+      renderPreorders();
+    } else if(action === 'cancel-yes'){
+      pendingPreCancel = null;
+      o.status = 'cancelled';
+      if(preForm.editingId === o.id) resetPreForm();
+      afterPreordersChanged();
+      setPreStatus('Commande de ' + (o.customer || 'client sans nom') + ' annulée.', 'ok');
+    }
+  }
+
+  preListEl.addEventListener('click', onPreorderAction);
+  prePastListEl.addEventListener('click', onPreorderAction);
+
+  // ---------- Écran Commandes : saisie ----------
+  var preFormTitleEl   = document.getElementById('pre-form-title');
+  var preNameEl        = document.getElementById('pre-name');
+  var prePhoneEl       = document.getElementById('pre-phone');
+  var preDateTomorrowEl= document.getElementById('pre-date-tomorrow');
+  var preDateTodayEl   = document.getElementById('pre-date-today');
+  var preDateEl        = document.getElementById('pre-date');
+  var preTimeEl        = document.getElementById('pre-time');
+  var preProductsEl    = document.getElementById('pre-products');
+  var preLinesEl       = document.getElementById('pre-lines');
+  var preTotalEl       = document.getElementById('pre-total');
+  var preSaveBtn       = document.getElementById('pre-save-btn');
+  var preCancelEditBtn = document.getElementById('pre-cancel-edit-btn');
+  var preStatusEl      = document.getElementById('pre-status');
+
+  // items : productId → { name, price, qty }. Séparé du panier de la caisse.
+  var preForm = { editingId:null, items:{} };
+
+  function setPreStatus(msg, kind){
+    preStatusEl.textContent = msg;
+    preStatusEl.className = 'g-status' + (kind ? ' ' + kind : '');
+  }
+
+  function preFormItemIds(){
+    var ids = [];
+    PRODUCTS.forEach(function(p){ if(preForm.items[p.id]) ids.push(p.id); });
+    Object.keys(preForm.items).forEach(function(id){ if(ids.indexOf(id) === -1) ids.push(id); });
+    return ids;
+  }
+
+  function renderPreForm(){
+    if(!preProductsEl) return;
+    preProductsEl.innerHTML = PRODUCTS.map(function(p){
+      return '<button class="g-btn ghost" data-pre-add="'+p.id+'">'+escapeHtml(p.name)+'</button>';
+    }).join('');
+
+    var ids = preFormItemIds();
+    if(ids.length === 0){
+      preLinesEl.innerHTML = '<p class="empty-hint">Touchez un produit ci-dessus pour remplir la commande.</p>';
+    } else {
+      preLinesEl.innerHTML = ids.map(function(id){
+        var it = preForm.items[id];
+        return '<div class="cart-line">' +
+          '<div class="cart-line-name">'+escapeHtml(it.name)+'</div>' +
+          '<div class="cart-line-controls">' +
+            '<button class="qty-btn minus" data-pre-line="minus1" data-id="'+id+'">−1</button>' +
+            '<input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" data-pre-qty="'+id+'" value="'+it.qty+'">' +
+            '<button class="qty-btn plus" data-pre-line="plus1" data-id="'+id+'">+1</button>' +
+            '<button class="qty-btn plus5" data-pre-line="plus5" data-id="'+id+'">+5</button>' +
+          '</div>' +
+          '<div class="cart-line-subtotal">'+formatEuro(it.price * it.qty)+'</div>' +
+        '</div>';
+      }).join('');
+    }
+    var items = ids.map(function(id){ return preForm.items[id]; });
+    preTotalEl.textContent = formatEuro(preorderTotal(items));
+
+    var d = preDateEl.value;
+    preDateTomorrowEl.classList.toggle('on', d === dayOffsetKey(1));
+    preDateTodayEl.classList.toggle('on', d === dayOffsetKey(0));
+
+    var editing = preForm.editingId !== null;
+    preFormTitleEl.textContent = editing ? 'Modifier la commande' : 'Nouvelle commande';
+    preSaveBtn.textContent = editing ? 'Enregistrer les modifications' : 'Enregistrer la commande';
+    preCancelEditBtn.classList.toggle('hidden', !editing);
+  }
+
+  function changePreQty(id, delta){
+    var it = preForm.items[id];
+    if(!it){
+      var p = findProduct(id);
+      if(!p) return;
+      it = preForm.items[id] = { name:p.name, price:p.price, qty:0 };
+    }
+    it.qty = Math.max(0, it.qty + delta);
+    if(it.qty === 0) delete preForm.items[id];
+    renderPreForm();
+  }
+
+  function resetPreForm(){
+    preForm = { editingId:null, items:{} };
+    preNameEl.value = '';
+    prePhoneEl.value = '';
+    preDateEl.value = dayOffsetKey(1);
+    preTimeEl.value = '';
+    renderPreForm();
+  }
+
+  function startEditPreorder(o){
+    preForm = { editingId:o.id, items:{} };
+    o.items.forEach(function(it){
+      preForm.items[it.id] = { name:it.name, price:it.price, qty:it.qty };
+    });
+    preNameEl.value = o.customer;
+    prePhoneEl.value = o.phone;
+    // une commande d'un jour passé se reporte : on propose demain
+    preDateEl.value = (o.pickupDate && o.pickupDate >= dayOffsetKey(0)) ? o.pickupDate : dayOffsetKey(1);
+    preTimeEl.value = o.pickupTime;
+    setPreStatus('', '');
+    renderPreForm();
+  }
+
+  preProductsEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-pre-add]');
+    if(btn) changePreQty(btn.dataset.preAdd, 1);
+  });
+
+  preLinesEl.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-pre-line]');
+    if(!btn) return;
+    var action = btn.dataset.preLine;
+    if(action === 'minus1') changePreQty(btn.dataset.id, -1);
+    else if(action === 'plus1') changePreQty(btn.dataset.id, 1);
+    else if(action === 'plus5') changePreQty(btn.dataset.id, 5);
+  });
+
+  preLinesEl.addEventListener('change', function(e){
+    if(!e.target.matches('input[data-pre-qty]')) return;
+    var id = e.target.dataset.preQty;
+    var it = preForm.items[id];
+    if(!it) return;
+    var v = parseInt(e.target.value, 10);
+    if(isNaN(v) || v < 0) v = it.qty;
+    changePreQty(id, v - it.qty);
+  });
+
+  preLinesEl.addEventListener('focusin', function(e){
+    if(e.target.matches('input[data-pre-qty]')) e.target.select();
+  });
+
+  preDateTomorrowEl.addEventListener('click', function(){ preDateEl.value = dayOffsetKey(1); renderPreForm(); });
+  preDateTodayEl.addEventListener('click', function(){ preDateEl.value = dayOffsetKey(0); renderPreForm(); });
+  preDateEl.addEventListener('change', renderPreForm);
+
+  preCancelEditBtn.addEventListener('click', function(){
+    resetPreForm();
+    setPreStatus('Modification abandonnée.', 'ok');
+  });
+
+  preSaveBtn.addEventListener('click', function(){
+    var name = preNameEl.value.trim();
+    var phone = prePhoneEl.value.trim();
+    var date = preDateEl.value;
+    var time = parseTime(preTimeEl.value);
+    var ids = preFormItemIds();
+
+    if(!name){ setPreStatus('Indiquez le nom du client.', 'err'); return; }
+    if(phone && phone.replace(/\D/g, '').length < 6){
+      setPreStatus('Téléphone invalide — exemple : 0692 12 34 56', 'err'); return;
+    }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){
+      setPreStatus('Choisissez le jour du retrait — par exemple « Demain ».', 'err'); return;
+    }
+    if(date < dayOffsetKey(0)){
+      setPreStatus('Ce jour est déjà passé — choisissez aujourd\'hui ou plus tard.', 'err'); return;
+    }
+    if(!time){ setPreStatus('Heure de retrait invalide — exemple : 12:30', 'err'); return; }
+    if(ids.length === 0){ setPreStatus('Ajoutez au moins un produit à la commande.', 'err'); return; }
+
+    var items = ids.map(function(id){
+      var it = preForm.items[id];
+      return { id:id, name:it.name, price:it.price, qty:it.qty };
+    });
+
+    var o;
+    if(preForm.editingId !== null){
+      o = findPreorder(preForm.editingId);
+      if(!o || !isActivePreorder(o)){
+        resetPreForm();
+        setPreStatus('Cette commande a été remise ou annulée entre-temps : rien n\'a été modifié.', 'err');
+        return;
+      }
+      o.customer = name;
+      o.phone = phone;
+      o.pickupDate = date;
+      o.pickupTime = time;
+      o.items = items;
+      o.total = preorderTotal(items);
+    } else {
+      o = normalizePreorder({
+        id: 'c' + Date.now() + Math.floor(Math.random() * 1000),
+        customer: name, phone: phone,
+        pickupDate: date, pickupTime: time,
+        items: items, status: 'todo',
+        createdAt: new Date().toISOString()
+      });
+      PREORDERS.push(o);
+    }
+
+    var wasEditing = preForm.editingId !== null;
+    preListDay = date;
+    resetPreForm();
+    afterPreordersChanged();
+    setPreStatus((wasEditing ? 'Commande de ' + name + ' modifiée' : 'Commande de ' + name + ' enregistrée') +
+      ' : retrait ' + dayLabel(date) + ' à ' + time + '.', 'ok');
+  });
 
   // ---------- Sauvegarde GitHub ----------
   var CFG_KEY = 'mamazan_github_cfg_v1';
@@ -3138,6 +3799,8 @@
   renderUsageForm();
   renderCount();
   renderAlerts();
+  resetPreForm();
+  renderPreorders();
   if(cash.counted !== null && countRealEl) countRealEl.value = numToText(cash.counted);
 
   // ---------- Mise en cache hors-ligne ----------
