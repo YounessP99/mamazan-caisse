@@ -186,8 +186,12 @@
     font-size:1.15rem; font-weight:700;
   }
 
+  /* le total et « Valider » restent toujours à l'écran, même quand la
+     colonne déborde (alerte affichée, beaucoup de produits, petit iPad) */
   #cart-footer{
     flex:0 0 auto;
+    position:sticky; bottom:0; z-index:1;
+    background:inherit;
     padding-top:10px; margin-top:6px;
     border-top:2px solid var(--line);
   }
@@ -781,6 +785,9 @@
   @media (max-width: 900px){
     header > span{ display:none; }
     .tab-btn{ padding:0 12px; }
+    /* en portrait, la caisse défile d'un seul bloc : sinon l'historique
+       recouvre le bas du panier et masque « Valider la commande » */
+    #view-caisse .col{ flex:0 0 auto; overflow:visible; min-height:auto; }
   }
 </style>
 </head>
