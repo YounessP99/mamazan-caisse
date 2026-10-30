@@ -12,7 +12,21 @@ données localStorage et la checklist de fin de tâche.
 
 Pour **tester ou valider** une modification, utiliser le skill `mamazan-test`
 (`.claude/skills/mamazan-test/`). Aucune modification ne se livre sans que le test de
-parcours complet et le test de migration passent.
+parcours complet, le test de migration et la répétition de restauration passent.
+
+## Limites connues, à ne pas oublier
+
+- **Une tablette = une caisse.** Les données vivent dans le localStorage d'un seul
+  iPad. Deux tablettes ne partagent rien : deux personnes qui encaissent sur deux iPad
+  font deux caisses séparées, avec deux stocks et deux chiffres d'affaires qui ne se
+  voient pas. Plusieurs personnes peuvent vendre, mais sur le même iPad.
+- **La sauvegarde GitHub est le seul filet.** Safari peut vider le stockage d'un iPad
+  qui manque de place. La sauvegarde part à chaque clôture (et après les ventes) ; si
+  elle échoue, la journée reste marquée « pas encore sauvegardée » et l'envoi est
+  retenté. Les téléphones des clients et le jeton ne partent jamais dans la sauvegarde.
+- **Les coûts d'avant la v12 ne sont pas fiables.** Le stock de départ était compté
+  à 0 €. Ces journées gardent leur chiffre d'affaires et leurs quantités, mais leur
+  marge est marquée « coût non fiable » et ne doit pas entrer dans les tendances.
 
 ## Contraintes à ne jamais enfreindre
 

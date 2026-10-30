@@ -136,6 +136,25 @@ planter malgré les champs absents.
 Les données injectées doivent volontairement **omettre** les champs ajoutés par la
 modification en cours. C'est tout l'intérêt du test.
 
+## Test 3 — répétition de restauration (`~/mamazan-tests/test-restauration.js`)
+
+La sauvegarde GitHub est le seul filet si Safari vide le stockage de l'iPad. Une
+restauration jamais essayée ne vaut rien : ce test la répète à chaque livraison.
+
+1. Constituer plusieurs journées par l'interface (deux clôtures, une journée en cours,
+   un panier non validé, des commandes avec téléphone), GitHub simulé en mémoire avec la
+   même API que l'app (GET sha, PUT, GET « raw »).
+2. Vider complètement le stockage, restaurer par les réglages, redémarrer l'app.
+3. Comparer chiffre par chiffre : caisse, stock, chiffre d'affaires, marge, ventes,
+   panier, matières, ratios, archives, commandes. Seuls les téléphones diffèrent, et ils
+   ne doivent PAS revenir.
+4. Vérifier que ni le jeton ni aucun téléphone ne figurent dans les fichiers envoyés.
+5. Clôture sans Wi-Fi : la clôture se fait, la journée est marquée « pas encore
+   sauvegardée », puis part toute seule au lancement suivant quand le réseau revient.
+
+Toute modification du modèle de données doit ajouter ses nouvelles clés ou champs à
+cette comparaison.
+
 ## Vérifications rapides en plus
 
 Syntaxe du script et cohérence des identifiants DOM, sans lancer jsdom :
