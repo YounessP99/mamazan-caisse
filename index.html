@@ -948,11 +948,13 @@
 
       <div class="panel" id="supplies-panel">
         <h2>Matières premières &amp; consommables</h2>
+        <p id="sup-verify-hint" class="g-hint hidden"></p>
         <div id="supplies-list"></div>
         <div class="g-form">
           <input id="sup-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Nom (ex : Farine)">
           <input id="sup-unit" type="text" autocapitalize="none" autocorrect="off" autocomplete="off" placeholder="Unité (paquet, kg…)">
           <input id="sup-qty" type="text" inputmode="decimal" autocomplete="off" placeholder="Stock">
+          <input id="sup-cost" type="text" inputmode="decimal" autocomplete="off" placeholder="Prix d'une unité (1,50)">
           <input id="sup-alert" type="text" inputmode="decimal" autocomplete="off" placeholder="Alerte à">
           <div class="seg">
             <button class="seg-btn on" id="sup-kind-matiere">Matière première</button>
@@ -1056,6 +1058,7 @@
       <div class="panel" id="bilan-panel">
         <h2>Bilan de la journée</h2>
         <div class="kpi-grid" id="bilan-kpis"></div>
+        <p id="bilan-hint" class="g-hint hidden"></p>
       </div>
 
       <div class="panel" id="usage-panel">
@@ -1511,9 +1514,18 @@
         var lines = day.rows.map(function(r){
           return '<div class="archive-detail-line"><span>'+r.name+'</span><span>'+r.qty+'</span></div>';
         });
-        if(typeof day.margin === 'number'){
-          lines.push('<div class="archive-detail-line"><span>Coût des matières</span><span>'+formatEuro(day.cost || 0)+'</span></div>');
-          lines.push('<div class="archive-detail-line"><span>Marge</span><span>'+formatEuro(day.margin)+'</span></div>');
+        if(day.costsReliable === true){
+          if(typeof day.margin === 'number'){
+            var part = (typeof day.marginCoverage === 'number' && day.marginCoverage < 0.995)
+              ? ' (sur ' + Math.round(day.marginCoverage * 100) + ' % des ventes)' : '';
+            lines.push('<div class="archive-detail-line"><span>Coût des matières</span><span>'+formatEuro(day.cost || 0)+'</span></div>');
+            lines.push('<div class="archive-detail-line"><span>Marge'+part+'</span><span>'+formatEuro(day.margin)+'</span></div>');
+          } else {
+            lines.push('<div class="archive-detail-line"><span>Marge</span><span>coût inconnu</span></div>');
+          }
+        } else if(typeof day.margin === 'number'){
+          // journée d'avant la correction des prix : chiffre d'affaires et quantités justes, coût faux
+          lines.push('<div class="archive-detail-line"><span>Marge</span><span>coût non fiable</span></div>');
         }
         if(day.cash && typeof day.cash.ecart === 'number'){
           lines.push('<div class="archive-detail-line"><span>Écart de caisse</span><span>'+formatEuro(day.cash.ecart)+'</span></div>');
@@ -1559,6 +1571,10 @@
         rows: s.rows,
         cost: d.cost,
         margin: d.margin,
+        // les journées clôturées avant cette version n'ont pas ce champ :
+        // leur coût s'appuyait sur un stock de départ compté à 0 €
+        costsReliable: true,
+        marginCoverage: d.coverage,
         usage: usageRows,
         cash: {
           opening: cash.opening,
@@ -2064,6 +2080,10 @@
 
   // Un article de fourniture : matière première (farine, lait) ou consommable
   // (barquette, serviette). Le coût moyen se met à jour à chaque achat.
+  // costVerified : le prix du stock a été saisi par quelqu'un. Les matières
+  // créées avant cette règle avaient leur stock de départ compté à 0 €, ce qui
+  // faussait le coût moyen : tant que leur prix n'est pas vérifié, leur coût
+  // n'est compté nulle part.
   function normalizeSupply(s){
     return {
       id: s.id,
@@ -2072,7 +2092,8 @@
       unit: typeof s.unit === 'string' && s.unit ? s.unit : 'unité',
       qty: numOrZero(s.qty),
       alertAt: numOrZero(s.alertAt),
-      avgCost: numOrZero(s.avgCost)
+      avgCost: numOrZero(s.avgCost),
+      costVerified: s.costVerified === true
     };
   }
 
@@ -2226,7 +2247,7 @@
 
   // ---------- Coût de revient ----------
   // Somme, pour chaque matière rattachée, de « quantité par portion » × coût
-  // moyen d'achat. Vaut 0 tant qu'aucun ratio n'est connu.
+  // moyen d'achat. N'a de sens que si productCostStatus() vaut 'known'.
   function productCost(productId){
     var cost = 0;
     SUPPLIES.forEach(function(s){
@@ -2236,12 +2257,25 @@
     return Math.round(cost * 10000) / 10000;
   }
 
-  function productCostKnown(productId){
-    for(var i=0;i<SUPPLIES.length;i++){
-      var r = ratioFor(SUPPLIES[i].id, productId);
-      if(r && r.per > 0 && SUPPLIES[i].avgCost > 0) return true;
+  // Le coût d'un produit n'est connu que si toutes les matières qui lui sont
+  // rattachées ont une consommation apprise et un prix vérifié. Sinon l'app dit
+  // « coût inconnu » et pourquoi : elle n'invente jamais un coût à 0 €.
+  function productCostStatus(productId){
+    var linked = SUPPLIES.filter(function(s){ return isLinked(s.id, productId); });
+    if(linked.length === 0) return { known:false, reason:'rattachez des matières' };
+    var unverified = linked.filter(function(s){ return !s.costVerified || !(s.avgCost > 0); });
+    if(unverified.length){
+      return { known:false, reason:'prix à vérifier : ' + unverified.map(function(s){ return s.name; }).join(', ') };
     }
-    return false;
+    var unlearned = linked.filter(function(s){ var r = ratioFor(s.id, productId); return !(r && r.per > 0); });
+    if(unlearned.length){
+      return { known:false, reason:'consommation pas encore connue : ' + unlearned.map(function(s){ return s.name; }).join(', ') };
+    }
+    return { known:true, reason:'' };
+  }
+
+  function productCostKnown(productId){
+    return productCostStatus(productId).known;
   }
 
   function soldQtyById(){
@@ -2252,14 +2286,44 @@
     return qty;
   }
 
+  // La marge n'est calculée que sur les ventes dont le coût est connu.
+  // coverage = part du chiffre d'affaires couverte (0 à 1). Si rien n'est
+  // couvert, cost et margin valent null : « coût inconnu », pas 100 % de marge.
   function dayCostAndMargin(){
-    var sold = soldQtyById();
-    var cost = 0, revenue = 0;
-    Object.keys(sold).forEach(function(id){
-      cost += productCost(id) * sold[id];
+    var cost = 0, covered = 0, revenue = dayRevenue();
+    var knownCache = {};
+    state.orders.forEach(function(o){
+      o.items.forEach(function(it){
+        if(!(it.id in knownCache)) knownCache[it.id] = productCostKnown(it.id);
+        if(!knownCache[it.id]) return;
+        cost += productCost(it.id) * it.qty;
+        covered += it.price * it.qty;
+      });
     });
-    revenue = dayRevenue();
-    return { cost: cost, revenue: revenue, margin: revenue - cost };
+    if(covered <= 0){
+      return { cost:null, revenue:revenue, covered:0, coverage:0, margin:null };
+    }
+    return {
+      cost: cost,
+      revenue: revenue,
+      covered: covered,
+      coverage: revenue > 0 ? Math.min(1, covered / revenue) : 0,
+      margin: covered - cost
+    };
+  }
+
+  // Produits vendus aujourd'hui dont le coût est inconnu, avec la raison.
+  function unknownCostReasons(){
+    var seen = {}, out = [];
+    state.orders.forEach(function(o){
+      o.items.forEach(function(it){
+        if(seen[it.id]) return;
+        seen[it.id] = true;
+        var st = productCostStatus(it.id);
+        if(!st.known) out.push(it.name + ' (' + st.reason + ')');
+      });
+    });
+    return out;
   }
 
   // ---------- Alertes de seuil ----------
@@ -2288,6 +2352,8 @@
   var supUnitEl        = document.getElementById('sup-unit');
   var supQtyEl         = document.getElementById('sup-qty');
   var supAlertEl       = document.getElementById('sup-alert');
+  var supCostEl        = document.getElementById('sup-cost');
+  var supVerifyHintEl  = document.getElementById('sup-verify-hint');
   var supKindMatiereEl = document.getElementById('sup-kind-matiere');
   var supKindConsoEl   = document.getElementById('sup-kind-conso');
   var supAddBtn        = document.getElementById('sup-add-btn');
@@ -2306,6 +2372,12 @@
 
   function renderSupplies(){
     if(!suppliesListEl) return;
+    var toCheck = SUPPLIES.filter(needsPriceCheck);
+    supVerifyHintEl.textContent = toCheck.length
+      ? 'Vérifiez le prix de : ' + toCheck.map(function(s){ return s.name; }).join(', ') +
+        '. Avant cette version, le stock de départ était compté à 0 €, ce qui faisait paraître les coûts trop bas.'
+      : '';
+    supVerifyHintEl.classList.toggle('hidden', toCheck.length === 0);
     if(SUPPLIES.length === 0){
       suppliesListEl.innerHTML = '<p class="empty-hint">Aucune matière ni consommable enregistré. Ajoutez-en un ci-dessous.</p>';
       return;
@@ -2357,10 +2429,30 @@
         '<input class="g-num" data-supfield="alertAt" data-id="'+s.id+'" type="text" inputmode="decimal" autocomplete="off" value="'+numToText(s.alertAt)+'">' +
         '<span class="g-unit">seuil</span>' +
         actions +
-        (s.avgCost > 0 ? '<span class="g-row-sub">Coût moyen : '+formatEuro(s.avgCost)+' / '+s.unit+'</span>' : '<span class="g-row-sub">Coût inconnu — enregistrez un achat pour calculer la marge.</span>') +
+        costLine(s) +
         detail +
       '</div>';
     }).join('');
+  }
+
+  // Ligne de coût d'une matière : le coût moyen s'il est fiable, sinon de quoi
+  // saisir le prix pour le vérifier.
+  function costLine(s){
+    if(s.costVerified && s.avgCost > 0){
+      return '<span class="g-row-sub">Coût moyen : '+formatEuro(s.avgCost)+' / '+s.unit+'</span>';
+    }
+    if(!s.costVerified && s.avgCost <= 0 && s.qty <= 0){
+      return '<span class="g-row-sub">Coût inconnu — il sera connu au premier achat.</span>';
+    }
+    var was = s.avgCost > 0 ? ' (l\'app comptait '+formatEuro(s.avgCost)+', sans doute trop bas)' : '';
+    return '<span class="g-row-sub">Prix à vérifier'+was+' : tant que ce n\'est pas fait, ce coût n\'est pas compté.</span>' +
+      '<span class="g-unit">Prix d\'un '+s.unit+' :</span>' +
+      '<input class="g-num" data-verify-id="'+s.id+'" type="text" inputmode="decimal" autocomplete="off" placeholder="1,50">' +
+      '<button class="g-btn" data-supaction="verify" data-id="'+s.id+'">Confirmer le prix</button>';
+  }
+
+  function needsPriceCheck(s){
+    return !(s.costVerified && s.avgCost > 0) && (s.qty > 0 || s.avgCost > 0);
   }
 
   // Combien de portions encore produisibles, limitées par la matière la plus rare.
@@ -2403,15 +2495,23 @@
     var unit = supUnitEl.value.trim() || 'unité';
     var qty = parseNum(supQtyEl.value);
     var alertAt = parseNum(supAlertEl.value);
+    var cost = parseNum(supCostEl.value);
+    // Un stock sans prix fausserait le coût moyen pour toujours.
+    if(qty !== null && qty > 0 && (cost === null || cost <= 0)){
+      setSuppliesStatus('Indiquez le prix d\'un ' + unit + ' de ce stock — exemple : 1,50', 'err');
+      return;
+    }
     SUPPLIES.push(normalizeSupply({
       id: 's' + Date.now(),
       name: name,
       kind: newSupplyKind,
       unit: unit,
       qty: qty === null ? 0 : qty,
-      alertAt: alertAt === null ? 0 : alertAt
+      alertAt: alertAt === null ? 0 : alertAt,
+      avgCost: (cost !== null && cost > 0) ? cost : 0,
+      costVerified: cost !== null && cost > 0
     }));
-    supNameEl.value = ''; supUnitEl.value = ''; supQtyEl.value = ''; supAlertEl.value = '';
+    supNameEl.value = ''; supUnitEl.value = ''; supQtyEl.value = ''; supAlertEl.value = ''; supCostEl.value = '';
     saveSupplies();
     renderSupplies();
     renderCapacity();
@@ -2435,6 +2535,22 @@
       renderSupplies();
       renderCapacity();
       renderMargins();
+    } else if(action === 'verify'){
+      var sv = findSupply(id);
+      var input = suppliesListEl.querySelector('input[data-verify-id="'+id+'"]');
+      var price = input ? parseNum(input.value) : null;
+      if(!sv) return;
+      if(price === null || price <= 0){
+        setSuppliesStatus('Prix invalide — exemple : 1,50', 'err');
+        return;
+      }
+      sv.avgCost = price;
+      sv.costVerified = true;
+      saveSupplies();
+      renderSupplies();
+      renderMargins();
+      renderBilan();
+      setSuppliesStatus('Prix de « '+sv.name+' » confirmé : '+formatEuro(price)+' / '+sv.unit+'.', 'ok');
     } else if(action === 'del'){
       pendingSupplyDelete = id;
       renderSupplies();
@@ -2569,9 +2685,15 @@
       // coût moyen pondéré : l'ancien stock garde son coût, le nouveau arrive au prix payé
       var unitCost = amount / qty;
       var totalQty = s.qty + qty;
-      s.avgCost = totalQty > 0
-        ? ((s.qty * s.avgCost) + amount) / totalQty
-        : unitCost;
+      if(s.qty <= 0){
+        // rien en stock : le prix payé est le coût, et il est connu
+        s.avgCost = unitCost;
+        s.costVerified = true;
+      } else {
+        // un stock au prix non vérifié reste non vérifié : on ne mélange pas
+        // un vrai prix avec un prix inconnu en faisant comme si c'était sûr
+        s.avgCost = ((s.qty * s.avgCost) + amount) / totalQty;
+      }
       s.qty = totalQty;
       saveSupplies();
       if(!label) label = 'Achat ' + s.name;
@@ -2783,8 +2905,9 @@
       return;
     }
     marginListEl.innerHTML = PRODUCTS.map(function(p){
-      if(!productCostKnown(p.id)){
-        return '<div class="money-line"><span class="money-label">'+p.name+'<br><span class="money-time">coût inconnu — rattachez des matières et enregistrez un achat</span></span>' +
+      var st = productCostStatus(p.id);
+      if(!st.known){
+        return '<div class="money-line"><span class="money-label">'+p.name+'<br><span class="money-time">coût inconnu — '+st.reason+'</span></span>' +
           '<span class="money-amount">'+formatEuro(p.price)+'</span></div>';
       }
       var cost = productCost(p.id);
@@ -2799,6 +2922,7 @@
 
   // ---------- Fin de journée : bilan, consommation, comptage ----------
   var bilanKpisEl   = document.getElementById('bilan-kpis');
+  var bilanHintEl   = document.getElementById('bilan-hint');
   var usageListEl   = document.getElementById('usage-list');
   var usageSaveBtn  = document.getElementById('usage-save-btn');
   var usageStatusEl = document.getElementById('usage-status');
@@ -2819,12 +2943,28 @@
     if(!bilanKpisEl) return;
     var d = dayCostAndMargin();
     var c = cashSummary();
-    var pct = d.revenue > 0 ? Math.round((d.margin / d.revenue) * 100) : 0;
+    var marginLabel = 'Marge estimée';
+    var marginText, costText;
+    if(d.revenue <= 0){
+      costText = '—';
+      marginText = '—';
+    } else if(d.margin === null){
+      costText = 'inconnu';
+      marginText = 'coût inconnu';
+    } else {
+      var pct = Math.round((d.margin / d.covered) * 100);
+      costText = formatEuro(d.cost);
+      marginText = formatEuro(d.margin) + ' (' + pct + '%)';
+      if(d.coverage < 0.995) marginLabel += ' · sur ' + Math.round(d.coverage * 100) + ' % des ventes';
+    }
     bilanKpisEl.innerHTML =
       kpi('Chiffre d\'affaires', formatEuro(d.revenue), 'good') +
-      kpi('Coût des matières', formatEuro(d.cost), 'bad') +
+      kpi('Coût des matières', costText, 'bad') +
       kpi('Dépenses du jour', formatEuro(c.depensesTotal), 'bad') +
-      kpi('Marge estimée', formatEuro(d.margin) + ' (' + pct + '%)', 'strong');
+      kpi(marginLabel, marginText, 'strong');
+    var reasons = d.revenue > 0 ? unknownCostReasons() : [];
+    bilanHintEl.textContent = reasons.length ? 'Coût inconnu, donc hors de la marge : ' + reasons.join(' · ') + '.' : '';
+    bilanHintEl.classList.toggle('hidden', reasons.length === 0);
   }
 
   function renderUsageForm(){
@@ -3638,8 +3778,14 @@
       lines.push('- **Écart : '+formatEuro(ecart)+'**');
     }
     lines.push('');
-    lines.push('- Coût des matières (estimé) : '+formatEuro(dcm.cost));
-    lines.push('- **Marge estimée : '+formatEuro(dcm.margin)+'**');
+    if(dcm.margin === null){
+      lines.push('- Coût des matières : inconnu');
+      lines.push('- **Marge estimée : coût inconnu**');
+    } else {
+      var part = dcm.coverage < 0.995 ? ' (sur ' + Math.round(dcm.coverage * 100) + ' % des ventes)' : '';
+      lines.push('- Coût des matières (estimé) : '+formatEuro(dcm.cost)+part);
+      lines.push('- **Marge estimée : '+formatEuro(dcm.margin)+part+'**');
+    }
     lines.push('');
 
     if(cash.movements.length){

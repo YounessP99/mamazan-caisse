@@ -94,9 +94,18 @@ Rejouer une journée de bout en bout et vérifier les chiffres à chaque étape 
     des fournitures et le fond de caisse survivent
 
 Scénario de référence, à garder car il correspond à la réalité du terrain :
-20 paquets de farine en stock, achat de 10 paquets pour 15 €, 50 rôtis vendus à 1,40 €,
-5 paquets consommés. Attendu : coût moyen 0,50 €/paquet, ratio appris 0,1 paquet/rôti,
-coût du rôti 0,05 €, marge 1,35 €, stock restant 25 paquets, 250 rôtis encore possibles.
+20 paquets de farine en stock à 1,50 € le paquet, achat de 10 paquets pour 15 €, 50 rôtis
+vendus à 1,40 €, 5 paquets consommés. Attendu : coût moyen 1,50 €/paquet, ratio appris
+0,1 paquet/rôti, coût du rôti 0,15 €, marge 1,25 € (89 %), coût des matières du jour
+7,50 €, marge du jour 62,50 € (89 %), stock restant 25 paquets, 250 rôtis encore possibles.
+
+Attention : jusqu'à la v11, ce scénario attendait un coût moyen de 0,50 €. C'était un bug
+validé par le test : le stock de départ était compté à 0 €. Un coût inconnu ne vaut jamais
+0 € : l'app doit afficher « coût inconnu », jamais une marge à 100 %.
+
+Quand un test doit changer, dire lequel, pourquoi, et dans quelle catégorie il tombe :
+le code avait tort, l'attente avait tort, ou le comportement change volontairement.
+Faire tourner les anciens tests sur le nouveau code avant de toucher à un test.
 
 ## Test 2 — migration (le plus important)
 
