@@ -293,6 +293,7 @@
   .backup-status.err{ color:var(--terracotta); }
   #backup-config-toggle{
     display:block;
+    min-height:44px;
     margin:8px auto 0 auto;
     background:none; border:none;
     color:#8a7b63;
@@ -335,6 +336,33 @@
     touch-action:manipulation;
   }
   #cfg-save:active{ background:var(--green-dark); }
+  #restore-btn{
+    width:100%;
+    margin-top:12px;
+    background:var(--cream);
+    color:var(--green);
+    border:2px solid var(--green);
+    border-radius:10px;
+    min-height:52px;
+    font-size:1rem; font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  #restore-confirm{
+    margin-top:10px; padding:12px;
+    background:#fff0ec;
+    border:2px solid var(--terracotta);
+    border-radius:12px;
+  }
+  #restore-confirm.hidden{ display:none; }
+  #restore-summary{ margin:0 0 10px 0; font-size:.95rem; color:var(--terracotta-dark); font-weight:600; }
+  #restore-confirm-buttons{ display:flex; gap:10px; }
+  #restore-confirm-buttons button{
+    flex:1; min-height:52px; border-radius:10px; font-size:1rem; font-weight:800;
+    cursor:pointer; touch-action:manipulation; border:2px solid var(--terracotta);
+  }
+  #restore-yes{ background:var(--terracotta); color:var(--cream); }
+  #restore-no{ background:var(--cream); color:var(--terracotta); }
 
   /* ---- Rendu de monnaie ---- */
   #change-overlay{
@@ -1096,7 +1124,16 @@
             <input id="cfg-token" type="password" autocapitalize="none" autocorrect="off" autocomplete="off" placeholder="github_pat_...">
           </label>
           <button id="cfg-save">Enregistrer les réglages</button>
+          <button id="restore-btn">Restaurer cette tablette depuis GitHub</button>
+          <div id="restore-confirm" class="hidden">
+            <p id="restore-summary"></p>
+            <div id="restore-confirm-buttons">
+              <button id="restore-no">Annuler</button>
+              <button id="restore-yes">Oui, remplacer les données</button>
+            </div>
+          </div>
         </div>
+        <p id="backup-pending" class="backup-status err hidden"></p>
       </div>
 
       <div class="panel" id="archive-panel">
@@ -1668,6 +1705,19 @@
       });
       if(archive.length > 90) archive = archive.slice(0, 90);
       saveArchive(archive);
+
+      // la journée doit partir dans la sauvegarde : le résumé est construit
+      // maintenant, avant la remise à zéro, et l'envoi est retenté tant qu'il échoue
+      // l'heure dans le nom : deux clôtures le même jour (midi et soir) gardent chacune leur résumé
+      var closeTime = new Date();
+      var hh = String(closeTime.getHours()), mm = String(closeTime.getMinutes());
+      var closeStamp = todayStamp() + '-cloture-' + (hh.length < 2 ? '0' + hh : hh) + 'h' + (mm.length < 2 ? '0' + mm : mm);
+      var closeMd = buildBackupContent();
+      backupState.pending = true;
+      backupState.pendingLabel = 'du ' + archive[0].dateLabel + ' (clôturée à ' +
+        new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ')';
+      backupState.lastTry = 0;
+      saveBackupState();
     }
 
     state = { orders: [], nextOrderNumber: 1, cart: {}, usage: {} };
@@ -1691,6 +1741,9 @@
     setUsageStatus('', '');
     setCountStatus('', '');
     hideResetConfirm();
+    renderBackupPending();
+    // la clôture n'attend jamais la sauvegarde : sans Wi-Fi, on clôture quand même
+    if(closeMd) githubBackup({ md:closeMd, mdStamp:closeStamp, silent:true });
   }
 
   function showResetConfirm(){ resetConfirmEl.classList.remove('hidden'); }
@@ -3916,84 +3969,272 @@
     return btoa(unescape(encodeURIComponent(str)));
   }
 
-  // ---------- Sauvegarde automatique ----------
-  // Se déclenche uniquement après une commande validée, et au maximum une fois par heure :
-  // boutique fermée = aucune commande = aucune sauvegarde automatique.
+  // ---------- Sauvegarde ----------
+  // Chaque sauvegarde envoie deux fichiers dans le dépôt privé :
+  //  - sauvegardes/AAAA-MM-JJ.md : le résumé lisible de la journée ;
+  //  - donnees/mamazan-complet.json : toutes les données, pour restaurer une
+  //    tablette dont le stockage aurait été vidé.
+  // Le jeton n'y figure jamais, et les téléphones des clients en sont retirés :
+  // ils ne quittent pas la tablette.
+  // À la clôture, la sauvegarde part toujours. Si elle échoue (pas de Wi-Fi),
+  // la clôture n'est pas bloquée : la journée est marquée « pas encore
+  // sauvegardée » et l'envoi est retenté au lancement et après chaque vente.
   var LAST_AUTO_BACKUP_KEY = 'mamazan_last_autobackup_ts';
+  var BACKUP_STATE_KEY = 'mamazan_backup_state_v1';
+  var DATA_FILE_PATH = 'donnees/mamazan-complet.json';
+  var BEFORE_RESTORE_KEY = 'mamazan_avant_restauration_v1';
+  var backupBusy = false;
+  var queuedBackup = null; // demande arrivée pendant un envoi : elle part juste après
 
+  function loadBackupState(){
+    try {
+      var raw = localStorage.getItem(BACKUP_STATE_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(p && typeof p === 'object'){
+          return {
+            pending: p.pending === true,
+            pendingLabel: typeof p.pendingLabel === 'string' ? p.pendingLabel : '',
+            lastOk: typeof p.lastOk === 'string' ? p.lastOk : '',
+            lastTry: typeof p.lastTry === 'number' ? p.lastTry : 0
+          };
+        }
+      }
+    } catch(e){}
+    return { pending:false, pendingLabel:'', lastOk:'', lastTry:0 };
+  }
+
+  var backupState = loadBackupState();
+
+  function saveBackupState(){ storeItem(BACKUP_STATE_KEY, backupState); }
+
+  function hasCfg(cfg){ return !!(cfg && cfg.owner && cfg.repo && cfg.token); }
+
+  // Toutes les données, sans le jeton ni les téléphones.
+  function buildDataSnapshot(){
+    var data = {};
+    data[PRODUCTS_KEY] = PRODUCTS;
+    data[STORAGE_KEY] = state;
+    data[SUPPLIES_KEY] = SUPPLIES;
+    data[RATIOS_KEY] = RATIOS;
+    data[CASH_KEY] = cash;
+    data[ARCHIVE_KEY] = loadArchive();
+    data[PREORDERS_KEY] = PREORDERS.map(function(o){
+      var copy = {};
+      Object.keys(o).forEach(function(k){ copy[k] = o[k]; });
+      copy.phone = '';
+      return copy;
+    });
+    return { format:'mamazan-sauvegarde', version:1, savedAt:new Date().toISOString(), data:data };
+  }
+
+  function githubUrl(cfg, path){
+    return 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + path;
+  }
+
+  function githubError(status){
+    if(status === 404) return new Error('Dépôt introuvable. Vérifiez utilisateur et nom du dépôt.');
+    if(status === 401 || status === 403) return new Error('Accès refusé. Vérifiez le jeton et ses permissions.');
+    return new Error('Erreur GitHub (' + status + ').');
+  }
+
+  // Crée ou remplace un fichier du dépôt (il faut connaître son sha pour le remplacer).
+  function putFile(cfg, path, text, message){
+    var headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json' };
+    var url = githubUrl(cfg, path);
+    return fetch(url, { headers: headers })
+      .then(function(res){
+        if(res.status === 200) return res.json().then(function(j){ return j.sha; });
+        if(res.status === 404) return null;
+        throw githubError(res.status);
+      })
+      .then(function(sha){
+        var body = { message: message, content: b64EncodeUtf8(text) };
+        if(sha) body.sha = sha;
+        return fetch(url, { method:'PUT', headers:headers, body:JSON.stringify(body) });
+      })
+      .then(function(res){
+        if(res.status !== 200 && res.status !== 201) throw githubError(res.status);
+      });
+  }
+
+  function friendlyNetworkError(err){
+    var msg = (err && err.message) ? err.message : '';
+    if(!msg || /fetch|network|load/i.test(msg)) msg = 'Pas de connexion internet. Réessayez avec le Wi-Fi.';
+    return msg;
+  }
+
+  // opts.md : résumé déjà construit (à la clôture, avant la remise à zéro)
+  // opts.mdStamp : date du fichier résumé ; opts.silent : pas de message si les réglages manquent
+  function githubBackup(opts){
+    opts = opts || {};
+    var cfg = loadCfg();
+    if(!hasCfg(cfg)){
+      if(!opts.silent){
+        setBackupStatus('Réglages manquants : appuyez sur « Réglages de la sauvegarde » ci-dessous.', 'err');
+        backupConfigEl.classList.remove('hidden');
+      }
+      renderBackupPending();
+      return;
+    }
+    if(backupBusy){
+      // on garde la demande la plus utile : celle qui porte le résumé de clôture
+      if(!queuedBackup || opts.md) queuedBackup = opts;
+      return;
+    }
+    if(typeof fetch !== 'function'){
+      setBackupStatus('Pas de connexion internet. Réessayez avec le Wi-Fi.', 'err');
+      return;
+    }
+    backupBusy = true;
+    backupBtn.disabled = true;
+    backupState.lastTry = Date.now();
+    setBackupStatus('Sauvegarde en cours…', '');
+
+    var stamp = opts.mdStamp || todayStamp();
+    var md = opts.md || buildBackupContent();
+    var snapshot = JSON.stringify(buildDataSnapshot(), null, 1);
+
+    putFile(cfg, 'sauvegardes/' + stamp + '.md', md, 'Sauvegarde MamaZan du ' + stamp)
+      .then(function(){ return putFile(cfg, DATA_FILE_PATH, snapshot, 'Données MamaZan du ' + todayStamp()); })
+      .then(function(){
+        var now = new Date();
+        backupState.pending = false;
+        backupState.pendingLabel = '';
+        backupState.lastOk = now.toISOString();
+        saveBackupState();
+        setBackupStatus('✓ Sauvegardé sur GitHub à ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + '.', 'ok');
+      })
+      .catch(function(err){
+        saveBackupState();
+        setBackupStatus(friendlyNetworkError(err), 'err');
+      })
+      .then(function(){
+        backupBusy = false;
+        backupBtn.disabled = false;
+        renderBackupPending();
+        if(queuedBackup){
+          var next = queuedBackup;
+          queuedBackup = null;
+          githubBackup(next);
+        }
+      });
+  }
+
+  // Après une vente : une sauvegarde par heure au plus, ou toutes les 5 minutes
+  // tant qu'une journée clôturée n'est pas encore partie.
   function maybeAutoBackup(){
     var cfg = loadCfg();
-    if(!cfg || !cfg.owner || !cfg.repo || !cfg.token) return;
+    if(!hasCfg(cfg)) return;
+    if(backupState.pending){
+      if(Date.now() - backupState.lastTry < 5 * 60 * 1000) return;
+      githubBackup({ silent:true });
+      return;
+    }
     var last = 0;
     try { last = parseInt(localStorage.getItem(LAST_AUTO_BACKUP_KEY), 10) || 0; } catch(e){}
     if(Date.now() - last < 60 * 60 * 1000) return;
     try { localStorage.setItem(LAST_AUTO_BACKUP_KEY, String(Date.now())); } catch(e){}
-    githubBackup();
+    githubBackup({ silent:true });
   }
 
-  function githubBackup(){
-    var cfg = loadCfg();
-    if(!cfg || !cfg.owner || !cfg.repo || !cfg.token){
-      setBackupStatus('Réglages manquants : appuyez sur « Réglages de la sauvegarde » ci-dessous.', 'err');
-      backupConfigEl.classList.remove('hidden');
+  var backupPendingEl = document.getElementById('backup-pending');
+
+  function renderBackupPending(){
+    if(!backupPendingEl) return;
+    if(!backupState.pending){
+      backupPendingEl.classList.add('hidden');
+      backupPendingEl.textContent = '';
       return;
     }
-
-    var path = 'sauvegardes/' + todayStamp() + '.md';
-    var apiUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + path;
-    var headers = {
-      'Authorization': 'Bearer ' + cfg.token,
-      'Accept': 'application/vnd.github+json'
-    };
-
-    backupBtn.disabled = true;
-    setBackupStatus('Sauvegarde en cours…', '');
-
-    // 1) le fichier du jour existe-t-il déjà ? (nécessaire pour le mettre à jour)
-    fetch(apiUrl, { headers: headers })
-      .then(function(res){
-        if(res.status === 200) return res.json().then(function(j){ return j.sha; });
-        if(res.status === 404) return null;
-        if(res.status === 401) throw new Error('Jeton invalide ou expiré. Vérifiez les réglages.');
-        throw new Error('Erreur GitHub (' + res.status + '). Vérifiez les réglages.');
-      })
-      .then(function(sha){
-        var body = {
-          message: 'Sauvegarde MamaZan du ' + todayStamp(),
-          content: b64EncodeUtf8(buildBackupContent())
-        };
-        if(sha) body.sha = sha;
-        return fetch(apiUrl, {
-          method: 'PUT',
-          headers: headers,
-          body: JSON.stringify(body)
-        });
-      })
-      .then(function(res){
-        if(res.status === 200 || res.status === 201){
-          var now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-          setBackupStatus('✓ Sauvegardé sur GitHub à ' + now + '.', 'ok');
-        } else if(res.status === 404){
-          throw new Error('Dépôt introuvable. Vérifiez utilisateur et nom du dépôt.');
-        } else if(res.status === 401 || res.status === 403){
-          throw new Error('Accès refusé. Vérifiez le jeton et ses permissions.');
-        } else {
-          throw new Error('Erreur GitHub (' + res.status + ').');
-        }
-      })
-      .catch(function(err){
-        var msg = (err && err.message) ? err.message : '';
-        if(!msg || /fetch|network|load/i.test(msg)){
-          msg = 'Pas de connexion internet. Réessayez avec le Wi-Fi.';
-        }
-        setBackupStatus(msg, 'err');
-      })
-      .then(function(){
-        backupBtn.disabled = false;
-      });
+    var noCfg = !hasCfg(loadCfg());
+    backupPendingEl.textContent = 'Journée ' + backupState.pendingLabel + ' pas encore sauvegardée. ' +
+      (noCfg ? 'Remplissez les réglages de la sauvegarde ci-dessous.'
+             : 'Connectez le Wi-Fi : l\'envoi se fera tout seul, ou appuyez sur « Sauvegarder sur GitHub ».');
+    backupPendingEl.classList.remove('hidden');
   }
 
-  backupBtn.addEventListener('click', githubBackup);
+  backupBtn.addEventListener('click', function(){ githubBackup(); });
+
+  // ---------- Restauration ----------
+  var restoreBtn        = document.getElementById('restore-btn');
+  var restoreConfirmEl  = document.getElementById('restore-confirm');
+  var restoreSummaryEl  = document.getElementById('restore-summary');
+  var restoreYesBtn     = document.getElementById('restore-yes');
+  var restoreNoBtn      = document.getElementById('restore-no');
+  var RESTORABLE_KEYS   = [PRODUCTS_KEY, STORAGE_KEY, SUPPLIES_KEY, RATIOS_KEY, CASH_KEY, ARCHIVE_KEY, PREORDERS_KEY];
+  var pendingRestore    = null;
+
+  function isValidSnapshot(s){
+    return !!(s && s.format === 'mamazan-sauvegarde' && s.data && typeof s.data === 'object');
+  }
+
+  function cfgFromForm(){
+    return { owner:cfgOwnerEl.value.trim(), repo:cfgRepoEl.value.trim(), token:cfgTokenEl.value.trim() };
+  }
+
+  restoreBtn.addEventListener('click', function(){
+    var cfg = hasCfg(cfgFromForm()) ? cfgFromForm() : loadCfg();
+    if(!hasCfg(cfg)){ setBackupStatus('Remplissez les trois champs pour retrouver la sauvegarde.', 'err'); return; }
+    if(typeof fetch !== 'function'){ setBackupStatus('Pas de connexion internet. Réessayez avec le Wi-Fi.', 'err'); return; }
+    setBackupStatus('Recherche de la sauvegarde…', '');
+    fetch(githubUrl(cfg, DATA_FILE_PATH), {
+      headers: { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github.raw+json' }
+    })
+      .then(function(res){
+        if(res.status === 404) throw new Error('Aucune sauvegarde de données trouvée dans ce dépôt.');
+        if(res.status !== 200) throw githubError(res.status);
+        return res.text();
+      })
+      .then(function(text){
+        var s = JSON.parse(text);
+        if(!isValidSnapshot(s)) throw new Error('Le fichier trouvé n\'est pas une sauvegarde MamaZan.');
+        pendingRestore = s;
+        var d = s.data;
+        var when = new Date(s.savedAt);
+        var count = function(v){ return Array.isArray(v) ? v.length : 0; };
+        var orders = d[STORAGE_KEY] && Array.isArray(d[STORAGE_KEY].orders) ? d[STORAGE_KEY].orders.length : 0;
+        restoreSummaryEl.textContent = 'Sauvegarde du ' + when.toLocaleDateString('fr-FR') + ' à ' +
+          when.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + ' : ' +
+          count(d[PRODUCTS_KEY]) + ' produits, ' + count(d[SUPPLIES_KEY]) + ' matières, ' +
+          orders + ' ventes du jour, ' + count(d[ARCHIVE_KEY]) + ' journées archivées, ' +
+          count(d[PREORDERS_KEY]) + ' commandes. Elle remplacera toutes les données de cette tablette. ' +
+          'Les téléphones des clients ne sont pas dans la sauvegarde.';
+        restoreConfirmEl.classList.remove('hidden');
+        setBackupStatus('', '');
+      })
+      .catch(function(err){
+        pendingRestore = null;
+        setBackupStatus(friendlyNetworkError(err), 'err');
+      });
+  });
+
+  restoreNoBtn.addEventListener('click', function(){
+    pendingRestore = null;
+    restoreConfirmEl.classList.add('hidden');
+    setBackupStatus('Restauration annulée : rien n\'a changé.', 'ok');
+  });
+
+  restoreYesBtn.addEventListener('click', function(){
+    if(!pendingRestore) return;
+    var s = pendingRestore;
+    // les réglages saisis servent tout de suite, et la tablette garde une copie
+    // de ses données d'avant, au cas où
+    var cfg = cfgFromForm();
+    if(hasCfg(cfg)){ try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e){} }
+    var before = {};
+    RESTORABLE_KEYS.forEach(function(k){ var v = localStorage.getItem(k); if(v !== null) before[k] = v; });
+    try { localStorage.setItem(BEFORE_RESTORE_KEY, JSON.stringify({ at:new Date().toISOString(), data:before })); } catch(e){}
+    inBatch(function(){
+      RESTORABLE_KEYS.forEach(function(k){
+        if(k in s.data) storeItem(k, s.data[k]);
+      });
+      storeItem(BACKUP_STATE_KEY, { pending:false, pendingLabel:'', lastOk:s.savedAt, lastTry:0 });
+    });
+    pendingRestore = null;
+    setBackupStatus('Données restaurées. L\'app redémarre…', 'ok');
+    try { location.reload(); } catch(e){}
+  });
 
   backupToggleBtn.addEventListener('click', function(){
     backupConfigEl.classList.toggle('hidden');
@@ -4041,6 +4282,11 @@
   renderAlerts();
   resetPreForm();
   renderPreorders();
+  renderBackupPending();
+  // une journée clôturée sans Wi-Fi repart dès que l'app est relancée
+  if(backupState.pending && hasCfg(loadCfg())){
+    setTimeout(function(){ githubBackup({ silent:true }); }, 3000);
+  }
   if(cash.counted !== null && countRealEl) countRealEl.value = numToText(cash.counted);
 
   // ---------- Mise en cache hors-ligne ----------
