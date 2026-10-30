@@ -1123,6 +1123,73 @@
 (function(){
   "use strict";
 
+  // ---------- Écritures groupées ----------
+  // Une vente modifie plusieurs clés (stock, ventes, commandes). localStorage
+  // n'écrit qu'une clé à la fois : si l'app s'arrête entre deux écritures, le
+  // stock et les ventes ne correspondent plus. Pour l'éviter, une action qui
+  // touche plusieurs clés ouvre un lot : ses enregistrements sont retenus, puis
+  // écrits ensemble à la fin, précédés d'un journal qui contient toutes les
+  // nouvelles valeurs. Si l'app s'arrête au milieu, le journal est rejoué au
+  // lancement suivant, avant toute lecture.
+  var JOURNAL_KEY = 'mamazan_journal_v1';
+  var batchDepth = 0, batchWrites = null;
+
+  function replayJournal(){
+    try {
+      var raw = localStorage.getItem(JOURNAL_KEY);
+      if(!raw) return false;
+      var j = JSON.parse(raw);
+      if(j && j.writes && typeof j.writes === 'object'){
+        Object.keys(j.writes).forEach(function(k){
+          if(typeof j.writes[k] === 'string') localStorage.setItem(k, j.writes[k]);
+        });
+      }
+      localStorage.removeItem(JOURNAL_KEY);
+      return true;
+    } catch(e){ return false; }
+  }
+  replayJournal();
+
+  function storeItem(key, value){
+    var str = JSON.stringify(value);
+    if(batchDepth > 0){ batchWrites[key] = str; return; }
+    try { localStorage.setItem(key, str); }
+    catch(e){ /* stockage indisponible : la session continue en mémoire */ }
+  }
+
+  // Lecture qui voit aussi ce qui attend dans le lot en cours.
+  function readItem(key){
+    if(batchDepth > 0 && batchWrites && typeof batchWrites[key] === 'string') return batchWrites[key];
+    return localStorage.getItem(key);
+  }
+
+  function commitBatch(){
+    var writes = batchWrites || {};
+    batchWrites = null;
+    var keys = Object.keys(writes);
+    if(keys.length === 0) return;
+    var journaled = false;
+    if(keys.length > 1){
+      try { localStorage.setItem(JOURNAL_KEY, JSON.stringify({ at:Date.now(), writes:writes })); journaled = true; }
+      catch(e){}
+    }
+    keys.forEach(function(k){
+      try { localStorage.setItem(k, writes[k]); } catch(e){}
+    });
+    if(journaled){ try { localStorage.removeItem(JOURNAL_KEY); } catch(e){} }
+  }
+
+  // Exécute fn en lot. Le lot se referme toujours, même en cas d'erreur.
+  function inBatch(fn){
+    if(batchDepth === 0) batchWrites = {};
+    batchDepth++;
+    try { return fn(); }
+    finally {
+      batchDepth--;
+      if(batchDepth === 0) commitBatch();
+    }
+  }
+
   var DEFAULT_PRODUCTS = [
     { id:'rotinature',   name:'Rôti nature',   price:1.20 },
     { id:'roti',         name:'Rôti',          price:1.40 },
@@ -1165,7 +1232,7 @@
   }
 
   function saveProducts(){
-    try { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(PRODUCTS)); } catch(e){}
+    storeItem(PRODUCTS_KEY, PRODUCTS);
   }
 
   var PRODUCTS = loadProducts();
@@ -1193,8 +1260,7 @@
   }
 
   function saveState(){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    catch(e){ /* stockage indisponible : la session continue en mémoire */ }
+    storeItem(STORAGE_KEY, state);
   }
 
   function formatEuro(n){
@@ -1404,6 +1470,9 @@
   }
 
   function validateOrder(){
+    return inBatch(function(){ return validateOrderNow(); });
+  }
+  function validateOrderNow(){
     var ids = Object.keys(state.cart).filter(function(id){ return state.cart[id] > 0; });
     if(ids.length === 0) return;
 
@@ -1438,6 +1507,9 @@
   }
 
   function deleteOrder(number){
+    return inBatch(function(){ return deleteOrderNow(number); });
+  }
+  function deleteOrderNow(number){
     var order = null;
     state.orders.forEach(function(o){ if(o.number === number) order = o; });
     if(order){
@@ -1457,6 +1529,9 @@
   // (« ah non, ajoutez-moi aussi… »). Le stock suivi est restitué et le numéro
   // de commande est réutilisé si c'était la dernière de la journée.
   function reopenOrder(number){
+    return inBatch(function(){ return reopenOrderNow(number); });
+  }
+  function reopenOrderNow(number){
     var order = null;
     state.orders.forEach(function(o){ if(o.number === number) order = o; });
     if(!order) return;
@@ -1489,14 +1564,14 @@
 
   function loadArchive(){
     try {
-      var raw = localStorage.getItem(ARCHIVE_KEY);
+      var raw = readItem(ARCHIVE_KEY);
       if(raw){ var parsed = JSON.parse(raw); if(Array.isArray(parsed)) return parsed; }
     } catch(e){}
     return [];
   }
 
   function saveArchive(archive){
-    try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive)); } catch(e){}
+    storeItem(ARCHIVE_KEY, archive);
   }
 
   var pendingArchiveOpen = null;
@@ -1548,6 +1623,9 @@
   }
 
   function closeDay(){
+    return inBatch(function(){ return closeDayNow(); });
+  }
+  function closeDayNow(){
     var hadMovements = cash.movements.length > 0;
     if(state.orders.length > 0 || hadMovements){
       var s = computeDaySummary();
@@ -1961,8 +2039,7 @@
       PRODUCTS = PRODUCTS.filter(function(x){ return x.id !== id; });
       delete state.cart[id];
       pendingProductDelete = null;
-      saveState();
-      afterProductsChanged();
+      inBatch(function(){ saveState(); afterProductsChanged(); });
       renderManageProducts();
       setManageStatus(p ? '« '+p.name+' » supprimé.' : 'Produit supprimé.', 'ok');
     }
@@ -2134,7 +2211,7 @@
   }
 
   function saveSupplies(){
-    try { localStorage.setItem(SUPPLIES_KEY, JSON.stringify(SUPPLIES)); } catch(e){}
+    storeItem(SUPPLIES_KEY, SUPPLIES);
   }
 
   var SUPPLIES = loadSupplies();
@@ -2160,7 +2237,7 @@
   }
 
   function saveRatios(){
-    try { localStorage.setItem(RATIOS_KEY, JSON.stringify(RATIOS)); } catch(e){}
+    storeItem(RATIOS_KEY, RATIOS);
   }
 
   var RATIOS = loadRatios();
@@ -2213,7 +2290,7 @@
   }
 
   function saveCash(){
-    try { localStorage.setItem(CASH_KEY, JSON.stringify(cash)); } catch(e){}
+    storeItem(CASH_KEY, cash);
   }
 
   var cash = loadCash();
@@ -2563,8 +2640,7 @@
       delete RATIOS[id];
       pendingSupplyDelete = null;
       if(openSupplyId === id) openSupplyId = null;
-      saveSupplies();
-      saveRatios();
+      inBatch(function(){ saveSupplies(); saveRatios(); });
       renderSupplies();
       renderCapacity();
       renderAlerts();
@@ -2695,7 +2771,6 @@
         s.avgCost = ((s.qty * s.avgCost) + amount) / totalQty;
       }
       s.qty = totalQty;
-      saveSupplies();
       if(!label) label = 'Achat ' + s.name;
     }
     if(!label) label = 'Dépense';
@@ -2711,7 +2786,7 @@
       qty: s ? qty : null,
       time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
     });
-    saveCash();
+    inBatch(function(){ saveSupplies(); saveCash(); });
 
     buyLabelEl.value = ''; buyQtyEl.value = ''; buyAmountEl.value = '';
     renderPurchases();
@@ -2755,6 +2830,9 @@
   // Supprimer un achat annule aussi son effet sur le stock, sinon les quantités
   // dérivent sans qu'on s'en aperçoive.
   function removeMovement(id){
+    return inBatch(function(){ return removeMovementNow(id); });
+  }
+  function removeMovementNow(id){
     var mv = null;
     cash.movements.forEach(function(m){ if(m.id === id) mv = m; });
     if(!mv) return;
@@ -3000,6 +3078,9 @@
   // produits partagent une matière, la répartition est proportionnelle aux
   // repères déjà connus — c'est une estimation, qui se précise jour après jour.
   function applyUsage(entries){
+    return inBatch(function(){ return applyUsageNow(entries); });
+  }
+  function applyUsageNow(entries){
     var sold = soldQtyById();
     var touched = 0;
 
@@ -3236,7 +3317,7 @@
   }
 
   function savePreorders(){
-    try { localStorage.setItem(PREORDERS_KEY, JSON.stringify(PREORDERS)); } catch(e){}
+    storeItem(PREORDERS_KEY, PREORDERS);
   }
 
   var PREORDERS = loadPreorders();
@@ -3398,6 +3479,9 @@
   // La remise est une vente comme une autre : numéro, historique, chiffre
   // d'affaires, stock, consommation de matières, sauvegarde automatique.
   function deliverPreorder(o){
+    return inBatch(function(){ return deliverPreorderNow(o); });
+  }
+  function deliverPreorderNow(o){
     var items = o.items.map(function(it){
       return { id:it.id, name:it.name, price:it.price, qty:it.qty };
     });
@@ -3443,6 +3527,9 @@
   }
 
   function cancelPreorderSale(order){
+    return inBatch(function(){ return cancelPreorderSaleNow(order); });
+  }
+  function cancelPreorderSaleNow(order){
     deleteOrder(order.number);
     if(state.nextOrderNumber === order.number + 1){
       state.nextOrderNumber = order.number;
