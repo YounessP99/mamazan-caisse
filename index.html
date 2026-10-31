@@ -11,33 +11,53 @@
 <meta name="format-detection" content="telephone=no">
 <title>MamaZan – Caisse</title>
 <style>
+  /* Couleurs tirées de la nourriture : farine (fond), tamarin (encre),
+     curcuma (vendre, encaisser), coriandre (préparer, argent qui entre),
+     croûte de rôti (compter), piment (épuisé, à corriger).
+     Les anciens noms (--green, --cream…) pointent sur la nouvelle palette. */
   :root{
-    --green:#1F3D2B;
-    --green-dark:#152a1e;
-    --terracotta:#B23A2F;
-    --terracotta-dark:#8f2e25;
-    --cream:#FBF3E7;
-    --line:#d8c9b0;
+    --farine:#FBF7EF; --farine-2:#F1E9DA; --blanc:#FFFFFF;
+    --tamarin:#2A1A10; --tamarin-2:#5B4636; --tamarin-3:#6E5A4A;
+    --curcuma:#F2B01E; --curcuma-press:#D99A0C; --curcuma-soft:#FDF0CC;
+    --coriandre:#2E6A2A; --coriandre-soft:#E2EED9;
+    --croute:#8A4E17; --croute-soft:#F6E7D6;
+    --piment:#B8321F; --piment-soft:#FBE4DC;
+    --hachure:repeating-linear-gradient(135deg, var(--farine-2) 0 8px, var(--farine) 8px 16px);
+    --ombre-1:0 1px 2px rgba(42,26,16,.08), 0 2px 8px rgba(42,26,16,.06);
+    --ombre-2:0 2px 4px rgba(42,26,16,.08), 0 10px 28px rgba(42,26,16,.10);
+    --ombre-3:0 20px 60px rgba(42,26,16,.28);
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+    --r-sm:10px; --r:16px; --r-lg:22px;
+    --ease:cubic-bezier(.2,.8,.2,1);
+    --moment:var(--curcuma); --pastille:var(--tamarin);
+    --green:var(--tamarin); --green-dark:#170d07;
+    --terracotta:var(--piment); --terracotta-dark:#962817;
+    --cream:var(--farine); --line:#E6DCCA;
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
+  /* Polices système, graisses fortes. Tous les chiffres en colonnes (tabular-nums). */
   html,body{
     margin:0; padding:0;
     position:fixed; inset:0; width:100%; height:100%;
     overflow:hidden;
-    background:var(--cream);
-    color:var(--green);
+    background:var(--farine);
+    color:var(--tamarin);
     font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size:16px; line-height:1.35;
+    font-variant-numeric:tabular-nums;
     -webkit-user-select:none; user-select:none;
     -webkit-touch-callout:none;
     overscroll-behavior:none;
   }
-
-  button{ font-family:inherit; }
-  input{ font-family:inherit; }
-
+  button, input, select{ font-family:inherit; font-variant-numeric:tabular-nums; }
+  input, select{ -webkit-user-select:text; user-select:text; }
   .hidden{ display:none !important; }
+  /* Version simple : ce qu'on a laissé tomber est masqué, pas supprimé.
+     Pour le remettre, retirer la classe « masque » de l'élément. */
+  .masque{ display:none !important; }
+  .m-short, .m-apercu, .m-cout{ display:none !important; }
 
   #app{
     height:100vh; height:100dvh;
@@ -48,856 +68,601 @@
     padding-right:env(safe-area-inset-right);
   }
 
-  header{
-    flex:0 0 auto;
-    background:var(--green);
-    color:var(--cream);
-    padding:14px 20px;
-    display:flex; align-items:baseline; gap:12px;
-    box-shadow:0 2px 6px rgba(0,0,0,.25);
-    z-index:2;
-  }
-  header h1{ margin:0; font-size:1.5rem; letter-spacing:.5px; }
-  header span{ font-size:1rem; opacity:.85; }
-
-  #tabs{ margin-left:auto; display:flex; gap:10px; align-self:center; }
-  .tab-btn{
-    background:rgba(251,243,231,.12);
-    color:var(--cream);
-    border:2px solid rgba(251,243,231,.4);
-    border-radius:10px;
-    min-height:48px;
-    padding:0 20px;
-    font-size:1rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .tab-btn.active{ background:var(--cream); color:var(--green); border-color:var(--cream); }
-
-  main{
-    flex:1 1 auto;
-    min-height:0;
-    display:flex;
-    gap:14px;
-    padding:14px;
-  }
-
+  main{ flex:1 1 auto; min-height:0; display:flex; gap:var(--s4); padding:var(--s4) var(--s5); }
   @media (max-width: 900px){
-    main{ flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    main{ flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:var(--s4); }
   }
-
   main.hidden{ display:none; }
 
-  #view-fin{ justify-content:center; }
-  #view-fin .col{ flex:0 1 640px; max-width:640px; }
-
-  .col{
-    display:flex; flex-direction:column;
-    min-height:0;
-    gap:14px;
-    overflow-y:auto; -webkit-overflow-scrolling:touch;
-  }
+  .col{ display:flex; flex-direction:column; min-height:0; gap:var(--s4); overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:var(--s6); }
   .col-left{ flex:1.3; }
   .col-right{ flex:1; }
 
-  .panel{
-    background:#fff8ee;
-    border:2px solid var(--line);
-    border-radius:16px;
-    padding:14px;
-    box-shadow:0 1px 4px rgba(31,61,43,.08);
-    flex-shrink:0;
-  }
+  /* Aucune bordure pleine : un bloc se détache par l'ombre et le fond. */
+  .panel{ background:var(--blanc); border-radius:var(--r-lg); padding:var(--s4) var(--s5) var(--s5); box-shadow:var(--ombre-1); flex-shrink:0; }
+  /* Titres de section discrets, en minuscules d'usage : jamais de capitales espacées. */
+  h2{ margin:0 0 var(--s3) 0; font-size:15px; font-weight:800; color:var(--tamarin-2); letter-spacing:0; text-transform:none; }
+  .empty-hint{ margin:0; padding:var(--s3) 0; color:var(--tamarin-3); font-size:15px; font-weight:600; }
 
-  h2{
-    margin:0 0 10px 0;
-    font-size:1.1rem;
-    color:var(--green);
-    text-transform:uppercase;
-    letter-spacing:.5px;
+  /* ---- Champs : fond farine, pas de cadre ; le focus se voit ---- */
+  input[type="text"], input[type="tel"], input[type="password"], input[type="date"], input[type="time"], select{
+    min-height:48px; padding:0 var(--s3);
+    border:0; border-radius:12px;
+    background:var(--farine-2); color:var(--tamarin);
+    font-size:17px; font-weight:700;
+    transition:box-shadow 150ms var(--ease), background-color 150ms var(--ease);
   }
+  input:focus, select:focus{ outline:none; background:var(--blanc); box-shadow:inset 0 0 0 2px var(--tamarin); }
+  input::placeholder{ color:var(--tamarin-3); font-weight:600; opacity:1; }
 
-  /* ---- Produits ---- */
-  #products{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:12px;
-  }
-  .product-btn{
-    background:var(--green);
-    color:var(--cream);
-    border:none;
-    border-radius:16px;
-    min-height:100px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:6px;
-    font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .product-btn:active{ background:var(--green-dark); transform:scale(0.97); }
-  .product-name{ font-size:1.25rem; }
-  .product-price{ font-size:1.05rem; opacity:.9; }
-  .product-stock{ font-size:.95rem; font-weight:800; opacity:.95; }
-  .product-btn.out{ background:var(--terracotta); }
-  .product-btn.out:active{ background:var(--terracotta-dark); }
+  /* ---- Boutons ---- */
+  button{ border:0; cursor:pointer; touch-action:manipulation; color:inherit; background:none;
+    transition:transform 150ms var(--ease), background-color 150ms var(--ease), box-shadow 150ms var(--ease), color 150ms var(--ease); }
+  button:active{ transform:scale(.97); }
+  button:disabled{ cursor:default; }
+  .g-btn{ min-height:48px; padding:0 var(--s4); border-radius:12px; background:var(--tamarin); color:var(--blanc); font-size:16px; font-weight:800; }
+  .g-btn.wide{ width:100%; min-height:56px; font-size:17px; margin-top:var(--s3); }
+  .g-btn.ghost{ background:var(--farine-2); color:var(--tamarin); }
+  /* « Remettre au client » : une action ordinaire, pas un danger */
+  .g-btn.danger{ background:var(--coriandre); color:var(--blanc); }
+  .mini-btn{ min-width:44px; min-height:44px; padding:0 var(--s3); border-radius:12px; background:var(--farine-2); color:var(--tamarin-2); font-size:15px; font-weight:800; }
+  .mini-btn.edit{ color:var(--tamarin); }
+  /* supprimer : piment, mais doux ; le seul aplat piment de l'app est la sauvegarde en retard */
+  .mini-btn[data-action="ask-delete"], .mini-btn[data-maction="del"], .mini-btn[data-supaction="del"], .mini-btn[data-moveaction="del"],
+  .mini-btn[data-pre-action="cancel"], .mini-btn[data-buyaction="del"]{ color:var(--piment); }
+  .confirm-yes{ background:var(--piment-soft); color:var(--piment); }
+  .confirm-no{ background:var(--farine-2); color:var(--tamarin); }
+  .confirm-text{ font-size:15px; font-weight:800; color:var(--piment); }
 
-  /* ---- Panier ---- */
-  #cart-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-  #cart-lines{
-    flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    min-height:120px;
-  }
-  .empty-hint{ color:#8a7b63; font-size:1rem; padding:10px 2px; }
+  /* ---- Ventes du jour (historique) ---- */
+  .order-entry{ padding:var(--s3) 0; }
+  .order-entry + .order-entry{ border-top:1px dashed var(--farine-2); }
+  .order-row{ display:flex; align-items:center; gap:var(--s3); }
+  .order-num{ font-weight:900; }
+  .order-time{ color:var(--tamarin-2); font-size:15px; font-weight:600; }
+  .order-total{ margin-left:auto; font-weight:900; }
+  .order-detail{ font-size:15px; color:var(--tamarin-2); margin-top:var(--s1); }
+  .order-actions{ display:flex; align-items:center; gap:var(--s2); }
 
-  .cart-line{
-    display:flex; align-items:center; flex-wrap:wrap;
-    gap:10px;
-    padding:10px 4px;
-    border-bottom:1px solid var(--line);
-  }
-  .cart-line-name{ flex:1 1 140px; font-size:1.15rem; font-weight:700; }
-  .cart-line-controls{ display:flex; align-items:center; gap:8px; }
-  .qty-btn{
-    border:2px solid var(--green);
-    background:var(--cream);
-    color:var(--green);
-    border-radius:10px;
-    min-width:52px; min-height:52px;
-    font-size:1.15rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .qty-btn:active{ background:var(--green); color:var(--cream); }
-  .qty-btn.plus5{ border-color:var(--terracotta); color:var(--terracotta); }
-  .qty-btn.plus5:active{ background:var(--terracotta); color:var(--cream); }
+  /* ---- Lignes d'une commande à l'avance (formulaire) ---- */
+  .cart-line{ display:flex; align-items:center; flex-wrap:wrap; gap:var(--s2) var(--s3); padding:var(--s2) 0; }
+  .cart-line + .cart-line{ border-top:1px dashed var(--farine-2); }
+  .cart-line-name{ flex:1 1 140px; font-size:17px; font-weight:800; }
+  .cart-line-controls{ display:flex; align-items:center; gap:var(--s2); }
+  .qty-btn{ min-width:48px; min-height:48px; padding:0 var(--s2); border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:17px; font-weight:900; }
+  .qty-btn.plus5{ color:var(--croute); }
+  .qty-input{ width:64px; min-height:48px; text-align:center; font-size:19px; font-weight:900; }
+  .cart-line-subtotal{ min-width:84px; text-align:right; font-size:17px; font-weight:900; }
 
-  .qty-input{
-    width:64px; min-height:52px;
-    text-align:center;
-    font-size:1.2rem; font-weight:700;
-    border:2px solid var(--green);
-    border-radius:10px;
-    background:#fff;
-    color:var(--green);
-  }
-  .cart-line-subtotal{
-    flex:0 0 90px; text-align:right;
-    font-size:1.15rem; font-weight:700;
-  }
-
-  /* le total et « Valider » restent toujours à l'écran, même quand la
-     colonne déborde (alerte affichée, beaucoup de produits, petit iPad) */
-  #cart-footer{
-    flex:0 0 auto;
-    position:sticky; bottom:0; z-index:1;
-    background:inherit;
-    padding-top:10px; margin-top:6px;
-    border-top:2px solid var(--line);
-  }
-  .cart-total-row{
-    display:flex; justify-content:space-between; align-items:center;
-    font-size:1.4rem; font-weight:800;
-    margin-bottom:10px;
-  }
-  #validate-btn{
-    width:100%;
-    background:var(--terracotta);
-    color:var(--cream);
-    border:none;
-    border-radius:14px;
-    min-height:76px;
-    font-size:1.4rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #validate-btn:active{ background:var(--terracotta-dark); }
-  #validate-btn:disabled{ background:#c9b7a3; color:#fff; cursor:default; }
-
-  #clear-cart-btn{
-    display:block;
-    margin:10px auto 0 auto;
-    background:none;
-    border:none;
-    color:#8a7b63;
-    font-size:.95rem;
-    text-decoration:underline;
-    padding:6px;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-
-  /* ---- Historique ---- */
-  #history-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-  #history-list{
-    flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    min-height:100px;
-  }
-  .order-entry{ padding:10px 4px; border-bottom:1px solid var(--line); }
-  .order-row{ display:flex; align-items:center; gap:10px; }
-  .order-num{ font-weight:800; }
-  .order-time{ color:#6b5e48; font-size:.95rem; }
-  .order-total{ margin-left:auto; font-weight:800; }
-  .order-detail{ font-size:.95rem; color:#4a4030; margin-top:2px; }
-  .order-actions{ display:flex; align-items:center; gap:6px; }
-
-  .mini-btn{
-    border:2px solid var(--terracotta);
-    background:var(--cream);
-    color:var(--terracotta);
-    border-radius:8px;
-    min-width:40px; min-height:40px;
-    font-size:1rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .mini-btn:active{ background:var(--terracotta); color:var(--cream); }
-  .mini-btn.edit{ border-color:var(--green); color:var(--green); padding:0 12px; }
-  .mini-btn.edit:active{ background:var(--green); color:var(--cream); }
-  .confirm-yes{ border-color:var(--terracotta); background:var(--terracotta); color:var(--cream); }
-  .confirm-no{ border-color:var(--green); color:var(--green); }
-  .confirm-no:active{ background:var(--green); color:var(--cream); }
-  .confirm-text{ font-size:.9rem; font-weight:700; color:var(--terracotta); }
-
-  /* ---- Résumé ---- */
-  #summary-panel{ background:var(--green); color:var(--cream); flex:0 0 auto; }
-  #summary-panel h2{ color:var(--cream); }
-  .summary-line{ display:flex; justify-content:space-between; font-size:1.05rem; padding:4px 0; }
-  #summary-total-row{
-    display:flex; justify-content:space-between;
-    margin-top:8px; padding-top:8px; border-top:1px solid rgba(251,243,231,.35);
-    font-size:1.3rem; font-weight:800;
-  }
-
-  /* ---- Sauvegarde GitHub ---- */
+  /* ---- Sauvegarde ---- */
   #backup-panel{ flex:0 0 auto; }
-  #backup-btn{
-    width:100%;
-    background:var(--green);
-    color:var(--cream);
-    border:none;
-    border-radius:12px;
-    min-height:64px;
-    font-size:1.15rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #backup-btn:active{ background:var(--green-dark); }
-  #backup-btn:disabled{ background:#c9b7a3; cursor:default; }
-  .backup-status{
-    margin:10px 0 0 0;
-    font-size:.95rem; font-weight:600;
-    min-height:1.2em;
-  }
-  .backup-status.ok{ color:var(--green); }
-  .backup-status.err{ color:var(--terracotta); }
-  #backup-config-toggle{
-    display:block;
-    min-height:44px;
-    margin:8px auto 0 auto;
-    background:none; border:none;
-    color:#8a7b63;
-    font-size:.9rem;
-    text-decoration:underline;
-    padding:6px;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #backup-config{ margin-top:10px; }
+  #backup-btn{ width:100%; min-height:56px; border-radius:var(--r); background:var(--tamarin); color:var(--blanc); font-size:17px; font-weight:900; }
+  #backup-btn:disabled{ background:var(--farine-2); color:var(--tamarin-3); }
+  .backup-status{ margin:var(--s3) 0 0 0; font-size:15px; font-weight:700; min-height:1.2em; }
+  .backup-status.ok{ color:var(--coriandre); }
+  .backup-status.err{ color:var(--piment); }
+  #backup-config-toggle{ display:block; min-height:44px; margin:var(--s2) auto 0; padding:0 var(--s3); color:var(--tamarin-2); font-size:15px; font-weight:700;
+    text-decoration:underline; text-underline-offset:3px; }
+  #backup-config{ margin-top:var(--s3); display:flex; flex-direction:column; gap:var(--s3); }
   #backup-config.hidden{ display:none; }
-  #backup-config label{
-    display:block;
-    font-size:.9rem; font-weight:700;
-    margin-bottom:8px;
-  }
-  #backup-config input{
-    display:block;
-    width:100%;
-    margin-top:4px;
-    min-height:48px;
-    padding:0 10px;
-    font-size:1rem;
-    border:2px solid var(--green);
-    border-radius:10px;
-    background:#fff;
-    color:var(--green);
-    -webkit-user-select:text; user-select:text;
-  }
-  #cfg-save{
-    width:100%;
-    margin-top:4px;
-    background:var(--green);
-    color:var(--cream);
-    border:none;
-    border-radius:10px;
-    min-height:52px;
-    font-size:1rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #cfg-save:active{ background:var(--green-dark); }
-  #restore-btn{
-    width:100%;
-    margin-top:12px;
-    background:var(--cream);
-    color:var(--green);
-    border:2px solid var(--green);
-    border-radius:10px;
-    min-height:52px;
-    font-size:1rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #restore-confirm{
-    margin-top:10px; padding:12px;
-    background:#fff0ec;
-    border:2px solid var(--terracotta);
-    border-radius:12px;
-  }
+  #backup-config label{ display:flex; flex-direction:column; gap:var(--s1); font-size:15px; font-weight:800; color:var(--tamarin-2); }
+  #backup-config input{ width:100%; }
+  #cfg-save{ min-height:52px; border-radius:12px; background:var(--tamarin); color:var(--blanc); font-size:16px; font-weight:900; }
+  #restore-btn{ min-height:52px; border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:16px; font-weight:800; }
+  #restore-confirm{ padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--piment-soft); }
   #restore-confirm.hidden{ display:none; }
-  #restore-summary{ margin:0 0 10px 0; font-size:.95rem; color:var(--terracotta-dark); font-weight:600; }
-  #restore-confirm-buttons{ display:flex; gap:10px; }
-  #restore-confirm-buttons button{
-    flex:1; min-height:52px; border-radius:10px; font-size:1rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation; border:2px solid var(--terracotta);
-  }
-  #restore-yes{ background:var(--terracotta); color:var(--cream); }
-  #restore-no{ background:var(--cream); color:var(--terracotta); }
+  #restore-summary{ margin:0 0 var(--s3) 0; font-size:15px; color:var(--tamarin); font-weight:700; }
+  #restore-confirm-buttons{ display:flex; gap:var(--s3); }
+  #restore-confirm-buttons button{ flex:1; min-height:52px; border-radius:12px; font-size:16px; font-weight:900; }
+  #restore-yes{ background:var(--blanc); color:var(--piment); box-shadow:var(--ombre-1); }
+  #restore-no{ background:var(--farine-2); color:var(--tamarin); }
 
-  /* ---- Rendu de monnaie ---- */
-  #change-overlay{
-    position:fixed; inset:0;
-    background:rgba(31,61,43,.6);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-    z-index:50;
-  }
-  .change-box{
-    background:var(--cream);
-    border-radius:20px;
-    padding:26px;
-    width:100%; max-width:420px;
-    box-shadow:0 8px 30px rgba(0,0,0,.35);
-  }
-  .change-title{
-    font-size:1.15rem; font-weight:800; color:var(--green);
-    margin-bottom:14px; text-align:center;
-  }
-  .change-total-row{
-    display:flex; justify-content:space-between;
-    font-size:1.3rem; font-weight:800; color:var(--green);
-    padding-bottom:14px; margin-bottom:14px;
-    border-bottom:2px solid var(--line);
-  }
-  .change-label{
-    display:block; font-size:1rem; font-weight:700; color:var(--green);
-  }
-  .change-label input{
-    display:block; width:100%; margin-top:8px;
-    min-height:64px; font-size:1.6rem; font-weight:800; text-align:center;
-    border:2px solid var(--green); border-radius:14px;
-    background:#fff; color:var(--green);
-  }
-  .change-result{
-    text-align:center;
-    font-size:1.55rem; font-weight:800;
-    padding:18px 0;
-    min-height:1.3em;
-  }
-  .change-result.positive{ color:var(--green); }
-  .change-result.negative{ color:var(--terracotta); }
-  .change-result.zero{ color:var(--green); }
-  .change-buttons{ display:flex; gap:10px; }
-  .change-buttons button{
-    flex:1 1 0; min-width:0;
-    min-height:68px; border-radius:14px;
-    font-size:1.1rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation;
-  }
-  #change-done-btn{
-    background:var(--terracotta); color:var(--cream);
-    border:none;
-  }
-  #change-done-btn:active{ background:var(--terracotta-dark); }
-  #change-back-btn{
-    background:var(--cream); color:var(--green);
-    border:2px solid var(--green);
-  }
-  #change-back-btn:active{ background:var(--green); color:var(--cream); }
-
-  /* ---- Confirmation d'ajout ---- */
-  #toast{
-    position:fixed;
-    left:50%; top:18px;
-    transform:translateX(-50%) translateY(-16px);
-    background:var(--green); color:var(--cream);
-    padding:12px 22px;
-    border-radius:999px;
-    font-size:1.05rem; font-weight:800;
-    box-shadow:0 4px 14px rgba(0,0,0,.25);
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .18s ease, transform .18s ease;
-    z-index:60;
-  }
+  /* ---- Toast ---- */
+  #toast{ position:fixed; left:50%; top:var(--s4); z-index:60; max-width:min(560px, 92vw);
+    transform:translateX(-50%) translateY(-12px); padding:var(--s3) var(--s5); border-radius:999px;
+    background:var(--tamarin); color:var(--blanc); font-size:16px; font-weight:800; box-shadow:var(--ombre-3);
+    opacity:0; pointer-events:none; transition:opacity 180ms var(--ease), transform 180ms var(--ease); }
   #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-  @media (prefers-reduced-motion: reduce){
-    #toast{ transition:opacity .01s linear; transform:translateX(-50%); }
-  }
 
-  /* ---- Journées précédentes ---- */
+  /* ---- Carnet ---- */
   #archive-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
   #archive-list{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:80px; }
-  .archive-entry{ padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer; touch-action:manipulation; }
-  .archive-row{ display:flex; align-items:center; gap:10px; }
-  .archive-date{ font-weight:800; flex:1 1 auto; }
-  .archive-count{ color:#6b5e48; font-size:.9rem; }
-  .archive-revenue{ font-weight:800; }
-  .archive-detail{ margin-top:8px; font-size:.9rem; color:#4a4030; }
-  .archive-detail-line{ display:flex; justify-content:space-between; padding:2px 0; }
+  .archive-entry{ min-height:52px; padding:var(--s3) 0; cursor:pointer; touch-action:manipulation; }
+  .archive-entry + .archive-entry{ border-top:1px dashed var(--farine-2); }
+  .archive-row{ display:flex; align-items:center; gap:var(--s3); min-height:28px; }
+  .archive-date{ font-weight:900; flex:1 1 auto; }
+  .archive-count{ color:var(--tamarin-2); font-size:15px; font-weight:600; }
+  .archive-revenue{ font-weight:900; }
+  .archive-detail{ margin-top:var(--s2); padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--farine); font-size:15px; color:var(--tamarin-2); }
+  .archive-detail-line{ display:flex; justify-content:space-between; gap:var(--s3); padding:var(--s1) 0; }
 
-  /* ---- Gestion des produits ---- */
-  #manage-list{ margin-bottom:4px; }
-  .manage-row{
-    display:flex; align-items:center; gap:8px;
-    padding:8px 0;
-    border-bottom:1px solid var(--line);
-  }
-  #manage-panel input{
-    min-height:52px;
-    border:2px solid var(--green);
-    border-radius:10px;
-    background:#fff;
-    color:var(--green);
-    font-size:1.05rem; font-weight:700;
-    padding:0 10px;
-    -webkit-user-select:text; user-select:text;
-  }
-  .m-name{ flex:1 1 auto; min-width:0; }
+  /* ---- Atelier : la carte ---- */
+  #manage-list{ margin-bottom:var(--s1); }
+  .manage-row{ display:flex; align-items:center; gap:var(--s2) var(--s3); flex-wrap:wrap; padding:var(--s3) 0; }
+  .manage-row + .manage-row{ border-top:1px dashed var(--farine-2); }
+  #manage-panel input{ min-height:48px; }
+  .m-name{ flex:1 1 200px; min-width:0; }
   .m-price{ flex:0 0 96px; text-align:right; }
   .manage-euro{ font-weight:800; flex:0 0 auto; }
-  #add-product-form{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .m-cat{ flex:1 1 180px; min-width:0; }
+  #add-cat{ flex:1 1 180px; min-width:0; }
+  .cat-row{ display:flex; align-items:center; gap:var(--s2) var(--s3); flex-wrap:wrap; padding:var(--s3) 0; }
+  .cat-row + .cat-row{ border-top:1px dashed var(--farine-2); }
+  .cat-row input{ flex:1 1 200px; min-width:0; }
+  .cat-compte{ flex:0 0 auto; font-size:15px; font-weight:700; color:var(--tamarin-2); }
+  .groupe-cat{ margin:var(--s4) 0 0; font-size:15px; font-weight:800; color:var(--tamarin-2); }
+  .groupe-cat:first-child{ margin-top:0; }
+  .m-cout{ flex:1 1 100%; font-size:15px; font-weight:600; color:var(--tamarin-2); }
+  .m-cout b{ font-weight:900; color:var(--tamarin); }
+  .m-cout b.marge{ color:var(--coriandre); }
+  .m-cout .inconnu{ color:var(--tamarin-3); }
+  #add-product-form{ display:flex; gap:var(--s2); margin-top:var(--s4); flex-wrap:wrap; }
   #add-name{ flex:1 1 160px; }
-  #add-price{ flex:0 0 110px; text-align:right; }
-  #add-product-btn{
-    flex:1 1 100%;
-    background:var(--green);
-    color:var(--cream);
-    border:none;
-    border-radius:10px;
-    min-height:56px;
-    font-size:1.05rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #add-product-btn:active{ background:var(--green-dark); }
-  #manage-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; }
-  #manage-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
-  #manage-status.ok{ color:var(--green); }
-  #manage-status.err{ color:var(--terracotta); }
+  #add-price{ flex:0 0 120px; text-align:right; }
+  #add-product-btn{ flex:1 1 100%; min-height:52px; border-radius:12px; background:var(--tamarin); color:var(--blanc); font-size:16px; font-weight:900; }
+  #manage-hint, #stock-hint{ color:var(--tamarin-2); font-size:15px; font-weight:600; margin:var(--s3) 0 0 0; line-height:1.4; }
+  #manage-status, #stock-status{ margin:var(--s2) 0 0 0; font-size:15px; font-weight:700; min-height:1.2em; }
+  #manage-status.ok, #stock-status.ok{ color:var(--coriandre); }
+  #manage-status.err, #stock-status.err{ color:var(--piment); }
 
-  /* ---- Stock ---- */
-  #stock-list{ margin-bottom:4px; }
-  .stock-row{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    padding:10px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .stock-name{ flex:1 1 140px; font-size:1.1rem; font-weight:700; }
-  .track-btn{
-    border:2px solid var(--green); background:var(--cream); color:var(--green);
-    border-radius:10px; min-height:52px; padding:0 14px;
-    font-size:.95rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation;
-  }
-  .track-btn.on{ background:var(--green); color:var(--cream); }
-  .stock-input{
-    width:84px; min-height:52px; text-align:center;
-    font-size:1.2rem; font-weight:800;
-    border:2px solid var(--green); border-radius:10px;
-    background:#fff; color:var(--green);
-    -webkit-user-select:text; user-select:text;
-  }
-  .stock-input.empty{ border-color:var(--terracotta); color:var(--terracotta); }
-  .stock-zero-btn{
-    border:2px solid var(--terracotta); background:var(--cream); color:var(--terracotta);
-    border-radius:10px; min-height:52px; padding:0 14px;
-    font-size:.95rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation;
-  }
-  .stock-zero-btn:active{ background:var(--terracotta); color:var(--cream); }
-  .stock-unlimited{ color:#8a7b63; font-size:.95rem; font-weight:600; flex:0 0 auto; }
-  #stock-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; }
-  #stock-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
-  #stock-status.ok{ color:var(--green); }
-  #stock-status.err{ color:var(--terracotta); }
+  /* ---- Stock : produits finis ---- */
+  #stock-list{ margin-bottom:var(--s1); }
+  .stock-row{ display:flex; align-items:center; gap:var(--s2) var(--s3); flex-wrap:wrap; padding:var(--s3) 0; }
+  .stock-row + .stock-row{ border-top:1px dashed var(--farine-2); }
+  .stock-name{ flex:1 1 160px; font-size:17px; font-weight:800; }
+  .track-btn{ min-height:48px; padding:0 var(--s4); border-radius:12px; background:var(--farine-2); color:var(--tamarin-2); font-size:15px; font-weight:800; }
+  .track-btn.on{ background:var(--coriandre-soft); color:var(--coriandre); }
+  .stock-input{ width:88px; min-height:48px; text-align:center; font-size:19px; font-weight:900; }
+  .stock-input.empty{ background:var(--piment-soft); color:var(--piment); }
+  .stock-zero-btn{ min-height:48px; padding:0 var(--s3); border-radius:12px; background:var(--farine-2); color:var(--tamarin-2); font-size:15px; font-weight:800; }
+  .stock-unlimited{ color:var(--tamarin-3); font-size:15px; font-weight:600; flex:0 0 auto; }
 
-  /* ================= GESTION ================= */
+  /* ---- Briques communes ---- */
+  .g-status{ margin:var(--s2) 0 0 0; font-size:15px; font-weight:700; min-height:1.2em; }
+  .g-status.ok{ color:var(--coriandre); }
+  .g-status.err{ color:var(--piment); }
+  .g-hint{ color:var(--tamarin-2); font-size:15px; font-weight:600; margin:var(--s3) 0 0 0; line-height:1.4; }
+  .g-form{ display:flex; gap:var(--s2); margin-top:var(--s4); flex-wrap:wrap; align-items:center; }
+  .g-form input, .g-form select{ flex:1 1 140px; min-width:0; }
+  .g-row{ display:flex; align-items:center; gap:var(--s2) var(--s3); flex-wrap:wrap; padding:var(--s3) 0; }
+  .g-row + .g-row{ border-top:1px dashed var(--farine-2); }
+  .g-row-name{ flex:1 1 160px; font-size:17px; font-weight:800; }
+  button.g-row-name{ min-height:44px; text-align:left; }
+  .g-row-sub{ flex:1 1 100%; font-size:14px; font-weight:600; color:var(--tamarin-2); margin-top:calc(-1 * var(--s1)); }
+  .g-num{ flex:0 0 88px; min-height:48px; padding:0 var(--s2); text-align:center; font-size:17px; font-weight:800; }
+  .g-num.low{ background:var(--piment-soft); color:var(--piment); }
+  .g-unit{ flex:0 0 auto; font-size:15px; font-weight:600; color:var(--tamarin-2); }
+  .g-tag{ flex:0 0 auto; padding:var(--s1) var(--s3); border-radius:999px; background:var(--farine-2); color:var(--tamarin-2); font-size:13px; font-weight:800; }
+  .g-tag.conso{ background:var(--croute-soft); color:var(--croute); }
 
-  /* ---- Sous-navigation ---- */
-  #subnav{
-    flex:0 0 auto;
-    display:flex; gap:8px;
-    padding:10px 14px 0 14px;
-    overflow-x:auto; -webkit-overflow-scrolling:touch;
-  }
-  #subnav.hidden{ display:none !important; }
-  .subtab-btn{
-    background:#fff8ee;
-    color:var(--green);
-    border:2px solid var(--line);
-    border-radius:10px;
-    min-height:44px;
-    padding:0 16px;
-    font-size:.98rem; font-weight:700;
-    white-space:nowrap;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .subtab-btn.active{ background:var(--green); color:var(--cream); border-color:var(--green); }
-
-  /* ---- Briques communes gestion ---- */
-  .g-status{ margin:8px 0 0 0; font-size:.95rem; font-weight:600; min-height:1.2em; }
-  .g-status.ok{ color:var(--green); }
-  .g-status.err{ color:var(--terracotta); }
-  .g-hint{ color:#8a7b63; font-size:.9rem; margin:12px 0 0 0; line-height:1.4; }
-
-  .g-form{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; align-items:center; }
-  .g-form input, .g-form select{
-    flex:1 1 120px;
-    min-width:0;
-    min-height:48px;
-    padding:0 12px;
-    border:2px solid var(--line);
-    border-radius:10px;
-    background:var(--cream);
-    color:var(--green);
-    font-size:1.05rem;
-  }
-  .g-form input:focus, .g-form select:focus{ outline:none; border-color:var(--green); }
-  .g-btn{
-    background:var(--green);
-    color:var(--cream);
-    border:none;
-    border-radius:10px;
-    min-height:48px;
-    padding:0 18px;
-    font-size:1.02rem; font-weight:800;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .g-btn:active{ background:var(--green-dark); }
-  .g-btn.wide{ width:100%; min-height:60px; font-size:1.12rem; margin-top:12px; }
-  .g-btn.ghost{ background:var(--cream); color:var(--green); border:2px solid var(--green); }
-  .g-btn.ghost:active{ background:var(--green); color:var(--cream); }
-  .g-btn.danger{ background:var(--terracotta); }
-  .g-btn.danger:active{ background:var(--terracotta-dark); }
-
-  .g-row{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    padding:10px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .g-row:last-child{ border-bottom:none; }
-  .g-row-name{ flex:1 1 150px; font-size:1.08rem; font-weight:700; }
-  .g-row-sub{ flex:1 1 100%; font-size:.88rem; color:#8a7b63; margin-top:-4px; }
-  .g-num{
-    flex:0 0 86px;
-    min-height:46px;
-    padding:0 8px;
-    border:2px solid var(--line);
-    border-radius:10px;
-    background:var(--cream);
-    color:var(--green);
-    font-size:1.05rem; font-weight:700;
-    text-align:center;
-  }
-  .g-num:focus{ outline:none; border-color:var(--green); }
-  .g-num.low{ border-color:var(--terracotta); color:var(--terracotta); }
-  .g-unit{ flex:0 0 auto; font-size:.92rem; color:#8a7b63; font-weight:600; }
-
-  .g-tag{
-    flex:0 0 auto;
-    font-size:.78rem; font-weight:800;
-    text-transform:uppercase; letter-spacing:.4px;
-    padding:4px 8px;
-    border-radius:6px;
-    background:rgba(31,61,43,.1);
-    color:var(--green);
-  }
-  .g-tag.conso{ background:rgba(178,58,47,.12); color:var(--terracotta); }
-
-  /* ---- Alertes ---- */
-  #alert-bar{
-    flex:0 0 auto;
-    margin:10px 14px 0 14px;
-    padding:10px 14px;
-    border-radius:12px;
-    background:var(--terracotta);
-    color:var(--cream);
-    font-size:.98rem; font-weight:700;
-    line-height:1.35;
-  }
+  /* ---- « À racheter » : pastille douce, jamais pendant la vente ---- */
+  #alert-bar{ flex:0 0 auto; margin:var(--s3) var(--s5) 0; padding:var(--s3) var(--s4) var(--s3) calc(var(--s4) + 4px); position:relative;
+    border-radius:var(--r); background:var(--piment-soft); color:var(--piment); font-size:15px; font-weight:800; line-height:1.35; }
+  #alert-bar::before{ content:""; position:absolute; left:8px; top:8px; bottom:8px; width:5px; border-radius:3px; background:var(--piment); }
   #alert-bar.hidden{ display:none !important; }
 
   /* ---- Chiffres clés ---- */
-  .kpi-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .kpi{
-    background:var(--cream);
-    border:2px solid var(--line);
-    border-radius:12px;
-    padding:10px 12px;
-  }
-  .kpi-label{ font-size:.82rem; font-weight:700; color:#8a7b63; text-transform:uppercase; letter-spacing:.4px; }
-  .kpi-value{ font-size:1.35rem; font-weight:800; margin-top:2px; }
-  .kpi.good .kpi-value{ color:var(--green); }
-  .kpi.bad .kpi-value{ color:var(--terracotta); }
-  .kpi.strong{ background:var(--green); border-color:var(--green); }
-  .kpi.strong .kpi-label{ color:rgba(251,243,231,.75); }
-  .kpi.strong .kpi-value{ color:var(--cream); }
+  .kpi-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:var(--s3); }
+  .kpi{ padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--farine); }
+  .kpi-label{ font-size:14px; font-weight:800; color:var(--tamarin-2); letter-spacing:0; text-transform:none; }
+  .kpi-value{ font-size:24px; font-weight:900; letter-spacing:-.02em; margin-top:var(--s1); }
+  .kpi.good .kpi-value{ color:var(--coriandre); }
+  .kpi.bad .kpi-value{ color:var(--piment); }
+  .kpi.strong{ background:var(--coriandre-soft); }
+  .kpi.strong .kpi-label{ color:var(--tamarin-2); }
+  .kpi.strong .kpi-value{ color:var(--coriandre); }
 
-  /* ---- Liens fourniture → produits ---- */
-  .link-chips{ display:flex; gap:6px; flex-wrap:wrap; flex:1 1 100%; margin-top:4px; }
-  .link-chip{
-    background:var(--cream);
-    border:2px solid var(--line);
-    color:#8a7b63;
-    border-radius:999px;
-    min-height:38px;
-    padding:0 12px;
-    font-size:.9rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .link-chip.on{ background:var(--green); border-color:var(--green); color:var(--cream); }
+  /* ---- Matières → produits ---- */
+  .link-chips{ display:flex; gap:var(--s2); flex-wrap:wrap; flex:1 1 100%; margin-top:var(--s1); }
+  .link-chip{ min-height:44px; padding:0 var(--s3); border-radius:999px; background:var(--farine-2); color:var(--tamarin-2); font-size:15px; font-weight:800; }
+  .link-chip.on{ background:var(--tamarin); color:var(--blanc); }
+  .ratio-line{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; flex:1 1 100%; margin:var(--s1) 0; padding:var(--s2) var(--s3);
+    border-radius:var(--r-sm); background:var(--farine); font-size:15px; color:var(--tamarin-2); }
+  .ratio-line .g-num{ flex:0 0 80px; }
+  .ratio-badge{ font-size:13px; font-weight:800; color:var(--tamarin-3); }
 
-  .ratio-line{
-    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
-    font-size:.92rem; color:#4a4030;
-    padding:6px 0 6px 10px;
-    border-left:3px solid var(--line);
-    margin:4px 0 4px 4px;
-  }
-  .ratio-line .g-num{ flex:0 0 70px; min-height:40px; font-size:.98rem; }
-  .ratio-badge{ font-size:.76rem; font-weight:800; color:#8a7b63; text-transform:uppercase; }
+  /* ---- Argent : entrées coriandre, sorties piment, liste calme ---- */
+  .money-line{ display:flex; justify-content:space-between; align-items:center; gap:var(--s3); min-height:52px; padding:var(--s2) 0; font-size:16px; }
+  .money-line + .money-line{ border-top:1px dashed var(--farine-2); }
+  .money-label{ flex:1 1 auto; font-weight:700; }
+  .money-time{ font-size:14px; font-weight:600; color:var(--tamarin-2); }
+  .money-amount{ font-weight:900; white-space:nowrap; text-align:right; }
+  .money-amount.out{ color:var(--piment); }
+  .money-amount.in{ color:var(--coriandre); }
+  .total-line{ display:flex; justify-content:space-between; align-items:baseline; margin-top:var(--s3); padding-top:var(--s3);
+    border-top:2px dashed var(--farine-2); font-size:20px; font-weight:900; }
 
-  /* ---- Mouvements d'argent ---- */
-  .money-line{
-    display:flex; justify-content:space-between; align-items:center; gap:8px;
-    padding:8px 0;
-    border-bottom:1px solid var(--line);
-    font-size:1.02rem;
-  }
-  .money-line:last-child{ border-bottom:none; }
-  .money-label{ flex:1 1 auto; }
-  .money-time{ font-size:.85rem; color:#8a7b63; }
-  .money-amount{ font-weight:800; white-space:nowrap; }
-  .money-amount.out{ color:var(--terracotta); }
-  .money-amount.in{ color:var(--green); }
+  .seg{ display:flex; gap:var(--s1); flex:1 1 100%; padding:var(--s1); border-radius:14px; background:var(--farine-2); }
+  .seg-btn{ flex:1 1 0; min-height:44px; padding:0 var(--s3); border-radius:10px; color:var(--tamarin-2); font-size:15px; font-weight:800; }
+  .seg-btn.on{ background:var(--blanc); color:var(--tamarin); box-shadow:var(--ombre-1); }
 
-  .total-line{
-    display:flex; justify-content:space-between;
-    margin-top:10px; padding-top:10px;
-    border-top:2px solid var(--line);
-    font-size:1.2rem; font-weight:800;
-  }
-
-  .seg{ display:flex; gap:8px; flex:1 1 100%; }
-  .seg-btn{
-    flex:1 1 0;
-    background:var(--cream);
-    border:2px solid var(--line);
-    color:#8a7b63;
-    border-radius:10px;
-    min-height:46px;
-    font-size:.98rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  .seg-btn.on{ background:var(--green); border-color:var(--green); color:var(--cream); }
-
-  /* ---- Alerte rupture ---- */
-  #out-overlay{
-    position:fixed; inset:0;
-    background:rgba(31,61,43,.6);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-    z-index:55;
-  }
-  .out-box{
-    background:var(--cream);
-    border-radius:20px;
-    padding:26px;
-    width:100%; max-width:420px;
-    text-align:center;
-    box-shadow:0 8px 30px rgba(0,0,0,.35);
-  }
-  .out-title{ font-size:1.5rem; font-weight:800; color:var(--terracotta); margin-bottom:10px; }
-  .out-msg{ font-size:1.1rem; font-weight:600; color:var(--green); margin-bottom:22px; }
-  .out-buttons{ display:flex; gap:10px; }
-  .out-buttons button{
-    flex:1; min-height:64px; border-radius:14px;
-    font-size:1.05rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation;
-  }
-  #out-cancel-btn{ background:var(--terracotta); color:var(--cream); border:none; }
-  #out-cancel-btn:active{ background:var(--terracotta-dark); }
-  #out-force-btn{ background:var(--cream); color:var(--green); border:2px solid var(--green); }
-  #out-force-btn:active{ background:var(--green); color:var(--cream); }
-
-  /* ---- Reset ---- */
+  /* ---- Clôture ---- */
   #reset-panel{ flex:0 0 auto; }
-  #reset-day-btn{
-    width:100%;
-    background:var(--cream);
-    color:var(--terracotta);
-    border:2px solid var(--terracotta);
-    border-radius:12px;
-    min-height:56px;
-    font-size:1.05rem; font-weight:700;
-    cursor:pointer;
-    touch-action:manipulation;
-  }
-  #reset-day-btn:active{ background:var(--terracotta); color:var(--cream); }
-
-  #reset-confirm{
-    margin-top:10px;
-    padding:12px;
-    background:#fff0ec;
-    border:2px solid var(--terracotta);
-    border-radius:12px;
-  }
+  #reset-day-btn{ width:100%; min-height:56px; border-radius:var(--r); background:var(--tamarin); color:var(--blanc); font-size:17px; font-weight:900; }
+  #reset-confirm{ margin-top:var(--s3); padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--farine); }
   #reset-confirm.hidden{ display:none; }
-  #reset-confirm p{ margin:0 0 10px 0; font-size:.95rem; color:var(--terracotta-dark); font-weight:600; }
-  #reset-confirm-buttons{ display:flex; gap:10px; }
-  #reset-confirm-buttons button{
-    flex:1; min-height:52px; border-radius:10px; font-size:1rem; font-weight:800;
-    cursor:pointer; touch-action:manipulation; border:2px solid var(--terracotta);
-  }
-  #reset-confirm-yes{ background:var(--terracotta); color:var(--cream); }
-  #reset-confirm-yes:active{ background:var(--terracotta-dark); }
-  #reset-confirm-no{ background:var(--cream); color:var(--terracotta); }
-  #reset-confirm-no:active{ background:#f0dcd4; }
+  #reset-confirm p{ margin:0 0 var(--s3) 0; font-size:15px; color:var(--tamarin); font-weight:700; }
+  #reset-confirm-buttons{ display:flex; gap:var(--s3); }
+  #reset-confirm-buttons button{ flex:1; min-height:52px; border-radius:12px; font-size:16px; font-weight:900; }
+  #reset-confirm-yes{ background:var(--tamarin); color:var(--blanc); }
+  #reset-confirm-no{ background:var(--farine-2); color:var(--tamarin); }
 
-  /* ---- Commandes à l'avance ---- */
-  .tab-count{
-    display:inline-block;
-    margin-left:8px; min-width:24px; padding:2px 7px;
-    border-radius:999px;
-    background:var(--terracotta); color:var(--cream);
-    font-size:.85rem; font-weight:800; line-height:1.3;
-    opacity:1;
-  }
+  /* ---- Commandes à l'avance : une commande = une carte, l'heure en grand ---- */
+  .pre-card{ display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; align-items:center; gap:var(--s1) var(--s4);
+    margin-top:var(--s3); padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--blanc); box-shadow:var(--ombre-1); }
+  .pre-card + .pre-card{ border-top:0; }
+  .pre-card .pre-time{ grid-row:1 / span 2; align-self:start; min-width:72px; font-size:26px; font-weight:900; letter-spacing:-.02em; line-height:1.1; }
+  .pre-card .g-row-name{ font-size:18px; }
+  .pre-card .money-amount{ font-size:18px; }
+  .pre-card .g-row-sub{ grid-column:2 / -1; margin-top:0; }
+  .pre-card .pre-actions{ grid-column:1 / -1; }
   .pre-card.done{ opacity:.6; }
-  .pre-time{ flex:0 0 auto; min-width:64px; font-size:1.25rem; font-weight:800; }
-  .pre-actions{ flex:1 1 100%; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .pre-actions{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); margin-top:var(--s1); }
   .pre-actions .mini-btn{ min-width:48px; min-height:48px; }
-  .g-tag.pre-tag.doing{ background:rgba(178,58,47,.12); color:var(--terracotta); }
-  .g-tag.pre-tag.ready{ background:var(--green); color:var(--cream); }
-  .pre-products{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-  .pre-field{
-    flex:1 1 150px;
-    display:flex; flex-direction:column; gap:4px;
-    font-size:.85rem; font-weight:700; color:#8a7b63;
-  }
-  .pre-date{
-    flex:1 1 150px; min-width:0;
-    min-height:46px; padding:0 10px;
-    border:2px solid var(--line); border-radius:10px;
-    background:var(--cream); color:var(--green);
-    font-size:1rem; font-weight:700;
-  }
-  #view-commandes input{ -webkit-user-select:text; user-select:text; }
+  .pre-tag{ padding:var(--s1) var(--s3); }
+  .g-tag.pre-tag.todo{ background:var(--farine-2); color:var(--tamarin-2); }
+  .g-tag.pre-tag.doing{ background:var(--curcuma-soft); color:var(--tamarin); }
+  .g-tag.pre-tag.ready{ background:var(--coriandre); color:var(--blanc); }
+  .g-tag.pre-tag.done{ background:var(--coriandre-soft); color:var(--coriandre); }
+  .g-tag.pre-tag.cancelled{ background:var(--farine-2); color:var(--tamarin-3); }
+  .pre-products{ display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s4); }
+  .pre-products button{ min-height:48px; padding:0 var(--s3); border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:15px; font-weight:800; }
+  .pre-field{ flex:1 1 150px; display:flex; flex-direction:column; gap:var(--s1); font-size:14px; font-weight:800; color:var(--tamarin-2); }
+  /* dans une colonne, le « flex » des champs jouerait sur la hauteur : on le neutralise */
+  .g-form .pre-field input{ flex:0 0 auto; width:100%; height:48px; min-height:48px; }
+  .pre-date{ min-height:48px; }
+  .pre-date{ flex:1 1 150px; min-width:0; }
 
-  /* quatre onglets : on libère de la place en portrait */
+  /* =================================================================
+     PRÉPARER · VENDRE · COMPTER
+     ================================================================= */
+  .num{ font-variant-numeric:tabular-nums; }
+  :focus-visible{ outline:3px solid var(--tamarin); outline-offset:2px; }
+
+  /* ---- Barre : neutre ; la couleur du moment n'est qu'un filet et une pastille.
+     Le curcuma plein est réservé à « Compte juste ». ---- */
+  #barre{ flex:0 0 auto; display:flex; align-items:center; gap:var(--s3); min-height:72px; padding:var(--s2) var(--s5);
+    background:var(--blanc); border-top:6px solid var(--moment); box-shadow:var(--ombre-1); z-index:5; }
+  #barre h1{ margin:0; font-size:22px; font-weight:900; letter-spacing:-.02em; }
+  .moments{ display:flex; gap:2px; padding:3px; border-radius:999px; background:var(--farine-2); }
+  .moments button{ white-space:nowrap; position:relative; min-height:44px; padding:0 18px; border:0; border-radius:999px; background:none; font-size:15px; font-weight:700; color:var(--tamarin-2); cursor:pointer; }
+  .moments button.on{ background:var(--pastille); color:var(--blanc); font-weight:900; }
+  body.m-preparer{ --moment:var(--coriandre); --pastille:var(--coriandre); }
+  body.m-vendre{ --moment:var(--curcuma); --pastille:var(--tamarin); }
+  body.m-compter{ --moment:var(--croute); --pastille:var(--croute); }
+  body.m-gestion{ --moment:var(--croute); --pastille:var(--tamarin); }
+  .tab-count{ position:absolute; top:-4px; right:-4px; min-width:22px; height:22px; padding:0 6px; border-radius:11px;
+    background:var(--piment); color:var(--blanc); font-size:13px; font-weight:900; line-height:22px; text-align:center; }
+  #barre .infos{ margin-left:auto; display:flex; align-items:center; gap:var(--s3); font-size:15px; font-weight:700; color:var(--tamarin-2); }
+  .barre-btn{ min-height:48px; min-width:48px; padding:0 var(--s4); border:0; border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:15px; font-weight:800; cursor:pointer; }
+  .barre-btn.ici{ background:var(--tamarin); color:var(--blanc); }
+
+  #alert-bar{ flex:0 0 auto; }
+
+  /* ---- Corps : étapes à gauche (Préparer, Compter), écran à droite ---- */
+  #corps{ flex:1 1 auto; min-height:0; display:flex; }
+  #corps > main{ flex:1 1 auto; min-width:0; }
+  .etapes{ flex:0 0 228px; display:flex; flex-direction:column; gap:var(--s1); padding:var(--s4) 0 var(--s4) var(--s4); overflow-y:auto; }
+  .etape{ min-height:52px; display:grid; grid-template-columns:32px minmax(0,1fr); gap:var(--s3); align-items:center; padding:var(--s2) var(--s3);
+    border:0; border-radius:var(--r); background:none; text-align:left; font-size:16px; font-weight:700; color:var(--tamarin-2); cursor:pointer; }
+  .etape i{ width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-style:normal; font-weight:900;
+    background:var(--blanc); box-shadow:inset 0 0 0 2px var(--farine-2); }
+  .etape.ici{ background:var(--blanc); color:var(--tamarin); box-shadow:var(--ombre-1); }
+  .etape.ici i{ background:var(--tamarin); color:var(--blanc); box-shadow:none; }
+  .col{ max-width:860px; }
+  #view-commandes .col{ max-width:none; }
+  .panel{ background:var(--blanc); border:0; border-radius:var(--r-lg); box-shadow:var(--ombre-1); padding:var(--s4) var(--s5); }
+  h2{ text-transform:none; letter-spacing:0; font-size:18px; font-weight:900; color:var(--tamarin); }
+  .titre-ecran{ margin:0; font-size:28px; font-weight:900; letter-spacing:-.025em; }
+  .phrase{ margin:0; font-size:18px; font-weight:600; line-height:1.4; color:var(--tamarin); }
+  .phrase b{ font-weight:900; }
+  .suivant{ align-self:flex-end; flex-shrink:0; min-height:56px; padding:0 var(--s5); border:0; border-radius:var(--r); background:var(--tamarin); color:var(--blanc);
+    font-size:17px; font-weight:900; cursor:pointer; }
+  .carte{ border-radius:var(--r-lg); background:var(--blanc); box-shadow:var(--ombre-1); padding:var(--s4) var(--s5); display:flex; flex-direction:column; gap:var(--s3); flex-shrink:0; }
+  .carte h3{ margin:0; font-size:16px; font-weight:800; color:var(--tamarin-2); }
+  .carte .t{ margin:0; font-size:16px; font-weight:700; }
+  .item{ display:flex; align-items:center; gap:var(--s3); min-height:52px; }
+  .item .t{ flex:1 1 auto; min-width:0; }
+  .item .t small{ display:block; font-size:14px; font-weight:600; color:var(--tamarin-2); }
+  .note{ margin:0; font-size:15px; font-weight:800; color:var(--coriandre); }
+  .btn-doux{ align-self:flex-start; min-height:44px; padding:0 var(--s4); border:0; border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:15px; font-weight:800; cursor:pointer; }
+  #point-contenu{ display:flex; flex-direction:column; gap:var(--s4); }
+  #ouvrir-btn{ align-self:flex-start; min-height:88px; padding:0 var(--s6); border:0; border-radius:var(--r-lg); background:var(--coriandre); color:var(--blanc);
+    font-size:26px; font-weight:900; box-shadow:var(--ombre-2); cursor:pointer; }
+
+  /* ---- Le langage de l'incertitude ----
+     Sûr : rien. Estimé (l'app apprend) : « ≈ » + soulignement pointillé.
+     À corriger : encoche piment + bouton doux. Danger de perte : seul aplat piment. */
+  .estime{ color:var(--tamarin-2); text-decoration:underline dotted 2px; text-underline-offset:5px; }
+  .estime::before{ content:"≈ "; font-weight:600; }
+  .apprend{ display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); border-radius:var(--r); background:var(--farine-2);
+    color:var(--tamarin-2); font-size:15px; font-weight:600; }
+  .points{ display:inline-flex; gap:5px; flex:0 0 auto; }
+  .points i{ width:10px; height:10px; border-radius:50%; background:var(--blanc); box-shadow:inset 0 0 0 2px var(--tamarin-3); }
+  .points i.on{ background:var(--tamarin-2); box-shadow:none; }
+  .corriger{ position:relative; padding-left:var(--s4); }
+  .corriger::before{ content:""; position:absolute; left:0; top:4px; bottom:4px; width:5px; border-radius:3px; background:var(--piment); }
+  .carte.corriger{ padding-left:calc(var(--s5) + 4px); }
+  .carte.corriger::before{ left:10px; }
+  .btn-corriger{ flex-shrink:0; align-self:flex-start; min-height:44px; padding:0 var(--s4); border:0; border-radius:var(--r-sm); background:var(--piment-soft); color:var(--piment);
+    font-size:15px; font-weight:800; white-space:nowrap; cursor:pointer; }
+  .item .btn-corriger{ align-self:center; }
+  .btn-corriger.fort{ background:var(--piment); color:var(--blanc); }
+  .etat{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:800; white-space:nowrap; }
+  .etat.ready{ background:var(--coriandre); color:var(--blanc); }
+  .etat.doing{ background:var(--curcuma-soft); color:var(--tamarin); }
+  .etat.todo{ background:var(--farine-2); color:var(--tamarin-2); }
+
+  /* listes de quantités (vendu, portions possibles) : calmes, chiffres alignés */
+  .summary-line{ display:flex; justify-content:space-between; gap:var(--s3); min-height:44px; align-items:center; font-size:17px; font-weight:700; }
+  .summary-line + .summary-line{ border-top:1px dashed var(--farine-2); }
+  .summary-line span:last-child{ font-weight:900; text-align:right; }
+  /* Ce que j'ai gagné : les chiffres du bilan en grand, le reste discret */
+  #summary-total-row{ display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); padding:0 0 var(--s4); font-size:17px; font-weight:800; color:var(--tamarin-2); }
+  #summary-total{ font-size:44px; font-weight:900; letter-spacing:-.035em; color:var(--tamarin); }
+  #view-gain .kpi-value{ font-size:32px; }
+  /* le chiffre d'affaires est déjà le grand chiffre au-dessus : pas de doublon */
+  #view-gain #bilan-kpis .kpi:first-child{ display:none; }
+  #view-gain #bilan-kpis .kpi.strong{ grid-column:1 / -1; }
+  /* Argent : le solde en chiffre d'affichage */
+  #cash-kpis .kpi:last-child, #count-kpis .kpi.strong{ grid-column:1 / -1; }
+  #cash-kpis .kpi:last-child .kpi-value{ font-size:40px; }
+  #view-stock .col{ gap:var(--s6); }
+  #view-stock .panel{ background:none; box-shadow:none; padding:0; border-radius:0; }
+  #view-stock h2{ font-size:20px; font-weight:900; color:var(--tamarin); }
+  .sous-titre{ margin:var(--s5) 0 var(--s1); font-size:15px; font-weight:800; color:var(--tamarin-2); }
+  .sous-titre:first-child{ margin-top:0; }
+  /* Achats : lignes alignées, montants à droite en colonnes */
+  #purchase-list .money-line, #movements-list .money-line{ display:grid; grid-template-columns:minmax(0,1fr) auto 44px; }
+  /* « coût inconnu », « coût non fiable » : gris calme, jamais rouge */
+  .inconnu{ color:var(--tamarin-3); font-weight:700; }
+  .non-fiable{ padding:2px var(--s2); border-radius:6px; background:var(--hachure); color:var(--tamarin-3); font-weight:800; }
+  .bascule{ display:inline-flex; padding:var(--s1); gap:var(--s1); border-radius:12px; background:var(--farine-2); }
+  .bascule button{ min-height:44px; padding:0 var(--s3); border:0; border-radius:9px; background:none; font-size:15px; font-weight:800; color:var(--tamarin-2); cursor:pointer; }
+  .bascule button.on{ background:var(--blanc); color:var(--tamarin); box-shadow:var(--ombre-1); }
+  .bascule button.on.jete{ background:var(--piment-soft); color:var(--piment); box-shadow:none; }
+  .reste-qte{ font-size:22px; font-weight:900; min-width:48px; text-align:right; }
+
+  /* Atelier : nom court */
+  .manage-row{ flex-wrap:wrap; }
+  .m-short{ flex:1 1 260px; min-width:0; }
+  .m-apercu{ flex:1 1 200px; font-size:14px; font-weight:600; color:var(--tamarin-2); }
+
+  /* =================================================================
+     VENDRE
+     ================================================================= */
+  #view-caisse{ gap:var(--s3); padding:var(--s3); }
+  /* à gauche : les catégories en onglets, puis les tuiles de la catégorie choisie */
+  #vente-gauche{ flex:1 1 auto; min-width:0; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
+  #cat-tabs{ flex:0 0 auto; display:flex; gap:var(--s2); overflow-x:auto; -webkit-overflow-scrolling:touch; padding:2px; scrollbar-width:none; }
+  #cat-tabs::-webkit-scrollbar{ display:none; }
+  .cat-tab{ flex:0 0 auto; min-height:52px; min-width:52px; padding:0 var(--s5); border-radius:999px; background:var(--blanc); box-shadow:var(--ombre-1);
+    color:var(--tamarin-2); font-size:17px; font-weight:800; white-space:nowrap; }
+  .cat-tab[aria-selected="true"]{ background:var(--tamarin); color:var(--blanc); box-shadow:none; }
+  #vente-gauche #products{ min-height:0; }
+  /* les tuiles prennent leur hauteur naturelle : pas de trou au milieu */
+  #products{ flex:1 1 auto; min-width:0; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); grid-auto-rows:auto; align-content:start;
+    gap:var(--s2); overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .product-btn{ position:relative; min-height:92px; display:flex; flex-direction:column; align-items:stretch; gap:var(--s2);
+    padding:var(--s3) var(--s3) 26px var(--s3); border:0; border-radius:var(--r); background:var(--blanc); color:var(--tamarin);
+    box-shadow:var(--ombre-2); text-align:left; overflow:hidden; cursor:pointer; }
+  /* trois lignes : deux produits qui ne diffèrent que par la fin du nom restent distincts */
+  .product-name{ font-size:18px; font-weight:800; letter-spacing:-.01em; line-height:1.12;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+  .product-btn .pied{ margin-top:auto; display:flex; align-items:baseline; justify-content:space-between; gap:var(--s2); }
+  .product-price{ font-size:17px; font-weight:700; color:var(--tamarin-2); }
+  /* stock : une jauge épaisse, lisible à bout de bras — sa présence dit « suivi en stock » */
+  .product-btn .jauge{ position:absolute; left:var(--s3); right:var(--s3); bottom:9px; height:10px; border-radius:5px;
+    background:var(--farine-2); box-shadow:inset 0 0 0 1px rgba(42,26,16,.18); overflow:hidden; }
+  .product-btn .jauge i{ display:block; height:100%; border-radius:5px; background:var(--coriandre); }
+  .product-btn.mi .jauge i{ background:var(--croute); }
+  .product-btn.bas .jauge i{ background:var(--piment); }
+  .product-stock{ display:flex; align-items:baseline; gap:4px; line-height:1; }
+  .product-stock b{ font-size:26px; font-weight:900; letter-spacing:-.03em; }
+  .product-stock small{ font-size:13px; font-weight:800; color:var(--tamarin-2); }
+  .product-btn.libre{ padding-bottom:var(--s3); }
+  /* épuisé au repos : hachuré, nom barré, gros 0 — se voit sans lire */
+  .product-btn.out{ background:var(--hachure); box-shadow:inset 0 0 0 2px var(--farine-2); }
+  .product-btn.out .product-name{ color:var(--tamarin-3); text-decoration:line-through 3px; text-decoration-color:var(--piment); }
+  .product-btn.out .product-price{ color:var(--tamarin-3); }
+  .product-btn.out .product-stock b{ color:var(--piment); }
+  /* après un toucher sur un épuisé : un bouton distinct, plus petit, qu'il faut viser */
+  .product-btn .forcer{ position:absolute; left:50%; bottom:26px; transform:translateX(-50%); min-height:44px; width:78%; z-index:2;
+    display:flex; align-items:center; justify-content:center; border-radius:12px; background:var(--blanc); color:var(--piment);
+    box-shadow:inset 0 0 0 2px var(--piment), var(--ombre-2); font-size:14px; font-weight:900; text-align:center; padding:0 6px;
+    animation:descend 160ms var(--ease); }
+  .product-btn.flash{ animation:flash 260ms var(--ease); }
+  @keyframes flash{ 0%{ box-shadow:0 0 0 0 var(--curcuma); } 40%{ box-shadow:0 0 0 6px var(--curcuma); } 100%{ box-shadow:var(--ombre-2); } }
+  .product-btn.non{ animation:non 240ms var(--ease); }
+  @keyframes non{ 0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-6px); } 75%{ transform:translateX(6px); } }
+  @keyframes descend{ from{ transform:translateY(-12px); opacity:0; } to{ transform:none; opacity:1; } }
+  .product-btn .forcer{ animation-name:none; }
+
+  /* ---- Colonne de droite : commandes à remettre, puis le ticket ---- */
+  #cote{ flex:0 0 352px; min-width:0; display:flex; flex-direction:column; gap:var(--s2); }
+  #ticket{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; position:relative; border-radius:var(--r-lg); background:var(--blanc); box-shadow:var(--ombre-2); overflow:hidden; }
+  #ticket header{ display:flex; align-items:center; justify-content:space-between; gap:var(--s2); padding:var(--s3) var(--s4) 0 var(--s4); }
+  #ticket h2{ margin:0; font-size:16px; font-weight:800; color:var(--tamarin-2); }
+  #clear-cart-btn{ min-height:44px; padding:0 var(--s3); border:0; background:none; color:var(--tamarin-2); font-size:15px; font-weight:700;
+    text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+  #cart-lines{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:var(--s1) var(--s4); }
+  .ligne{ width:100%; min-height:44px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:var(--s3); align-items:center;
+    padding:0; border:0; background:none; text-align:left; font-size:17px; color:var(--tamarin); cursor:pointer; }
+  .ligne + .ligne{ border-top:1px dashed var(--farine-2); }
+  .ligne .q{ min-width:34px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--farine-2); font-weight:900; }
+  .ligne .n{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ligne .st{ font-weight:800; }
+  .ligne.fixe{ cursor:default; }
+  .retrait-detail .note{ color:var(--tamarin-2); }
+  .ligne.neuve{ animation:neuve 220ms var(--ease); }
+  @keyframes neuve{ from{ background:var(--curcuma-soft); } to{ background:transparent; } }
+  #ticket .empty-hint{ padding:var(--s4) 0; color:var(--tamarin-3); font-size:15px; }
+  #ticket-total{ display:flex; align-items:baseline; justify-content:space-between; padding:var(--s1) var(--s4); border-top:2px dashed var(--farine-2); }
+  #ticket-total span{ font-size:16px; font-weight:800; color:var(--tamarin-2); }
+  #ticket-total b{ font-size:44px; font-weight:900; letter-spacing:-.035em; line-height:1.05; }
+  #encaisser{ display:grid; grid-template-columns:repeat(3,1fr) 1.2fr; gap:var(--s2); padding:0 var(--s4) var(--s4) var(--s4); }
+  #encaisser button{ border:0; cursor:pointer; color:var(--tamarin); }
+  #validate-btn{ grid-column:1 / -1; min-height:64px; border-radius:var(--r); background:var(--curcuma); font-size:23px; font-weight:900; box-shadow:0 4px 0 var(--curcuma-press); }
+  #validate-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--curcuma-press); }
+  .billet{ min-height:56px; border-radius:var(--r-sm); background:var(--curcuma-soft); font-size:20px; font-weight:900; }
+  #autre-btn{ min-height:56px; border-radius:var(--r-sm); background:var(--farine-2); font-size:15px; font-weight:800; }
+  #encaisser button:disabled{ background:var(--farine-2); color:var(--tamarin-3); box-shadow:none; cursor:default; }
+  /* bandeau après encaissement : rien ne bloque, on peut annuler */
+  #bandeau{ position:absolute; left:var(--s3); right:var(--s3); top:var(--s3); z-index:3; display:flex; align-items:center; gap:var(--s3);
+    padding:var(--s3) var(--s3) var(--s3) var(--s4); border-radius:var(--r); background:var(--tamarin); color:var(--blanc); box-shadow:var(--ombre-3);
+    animation:descend 200ms var(--ease); }
+  #bandeau .t{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:700; }
+  #bandeau .t b{ display:block; font-size:24px; font-weight:900; color:var(--curcuma); }
+  #annuler-btn{ min-height:48px; padding:0 var(--s4); border:0; border-radius:12px; background:var(--blanc); color:var(--tamarin); font-size:15px; font-weight:900; cursor:pointer; }
+  /* pavé « Autre… » : jamais le clavier de l'iPad */
+  #pave{ position:absolute; inset:0; z-index:4; display:flex; flex-direction:column; gap:var(--s2); padding:var(--s3) var(--s4) var(--s4); background:var(--blanc); animation:descend 160ms var(--ease); }
+  .ecran-pave{ display:flex; justify-content:space-between; align-items:baseline; padding:var(--s2) var(--s3); border-radius:var(--r); background:var(--farine); }
+  .ecran-pave span{ font-size:15px; font-weight:800; color:var(--tamarin-2); }
+  .ecran-pave b{ font-size:40px; font-weight:900; letter-spacing:-.03em; }
+  #pave .rendu{ min-height:28px; text-align:right; font-size:20px; font-weight:900; }
+  #pave .rendu.ok{ color:var(--coriandre); } #pave .rendu.manque{ color:var(--piment); }
+  .touches{ flex:1 1 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
+  .touches button{ min-height:52px; border:0; border-radius:var(--r-sm); background:var(--farine-2); color:var(--tamarin); font-size:26px; font-weight:900; cursor:pointer; }
+  .touches button:disabled{ opacity:.45; cursor:default; }
+  #pave .actions{ display:grid; grid-template-columns:1fr 1.6fr; gap:var(--s2); }
+  #pave .actions button{ min-height:60px; border:0; border-radius:var(--r); font-size:18px; font-weight:900; color:var(--tamarin); cursor:pointer; }
+  #pave-retour{ background:var(--farine-2); }
+  #pave-ok{ background:var(--curcuma); box-shadow:0 4px 0 var(--curcuma-press); }
+  #pave-ok:disabled{ background:var(--farine-2); color:var(--tamarin-3); box-shadow:none; cursor:default; }
+
+  /* commandes à remettre : une seule visible pendant la vente, au-dessus du ticket */
+  #retraits{ flex:0 0 auto; border-radius:var(--r-lg); background:var(--blanc); box-shadow:var(--ombre-2); padding:var(--s2) var(--s3); }
+  #retraits .titre{ display:flex; justify-content:space-between; align-items:center; white-space:nowrap; font-size:16px; font-weight:800; color:var(--tamarin-2); }
+  #retraits .voir{ min-height:44px; padding:0 var(--s2); border:0; background:none; font-size:14px; font-weight:800; color:var(--tamarin-2);
+    text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+  .retrait{ width:100%; min-height:56px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:var(--s3); align-items:center;
+    margin-top:var(--s1); padding:var(--s2) var(--s3); border:0; border-radius:var(--r-sm); background:var(--farine); color:var(--tamarin); text-align:left; cursor:pointer; }
+  .retrait .h{ font-size:20px; font-weight:900; letter-spacing:-.02em; }
+  .retrait .c{ min-width:0; font-size:14px; color:var(--tamarin-2); }
+  .retrait .c b{ display:block; font-size:16px; color:var(--tamarin); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .retrait .c span{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .retrait.proche{ background:var(--curcuma-soft); box-shadow:inset 4px 0 0 var(--curcuma); }
+  .retrait-detail{ margin-top:var(--s1); padding:var(--s2) var(--s3) var(--s3); border-radius:var(--r-sm); background:var(--farine); }
+  .retrait-detail b{ display:block; font-size:16px; overflow-wrap:anywhere; }
+  .retrait-detail p{ margin:4px 0 var(--s2); font-size:15px; color:var(--tamarin-2); overflow-wrap:anywhere; }
+  .remettre{ width:100%; min-height:48px; border:0; border-radius:12px; background:var(--blanc); box-shadow:inset 0 0 0 2px var(--tamarin);
+    color:var(--tamarin); font-size:15px; font-weight:900; cursor:pointer; }
+  .remettre:disabled{ box-shadow:inset 0 0 0 2px var(--farine-2); color:var(--tamarin-3); cursor:default; }
+
+  /* « Plus… » */
+  #plus{ position:fixed; top:84px; right:var(--s5); z-index:20; width:300px; padding:var(--s2); border-radius:var(--r-lg); background:var(--blanc); box-shadow:var(--ombre-3);
+    display:flex; flex-direction:column; gap:var(--s1); animation:descend 160ms var(--ease); }
+  #plus button{ min-height:52px; padding:0 var(--s4); border:0; border-radius:var(--r-sm); background:none; text-align:left; font-size:16px; font-weight:800; color:var(--tamarin); cursor:pointer; }
+  #plus .montant{ display:flex; justify-content:space-between; align-items:center; background:var(--farine); }
+  #plus .montant b{ font-size:20px; font-weight:900; }
+
+  /* feuilles */
+  #feuille-fond{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:var(--s4); background:rgba(42,26,16,.35); }
+  .feuille{ width:min(520px, 100%); max-height:100%; overflow-y:auto; display:flex; flex-direction:column; gap:var(--s3); padding:var(--s4) var(--s5) var(--s5);
+    border-radius:var(--r-lg); background:var(--blanc); box-shadow:var(--ombre-3); animation:descend 160ms var(--ease); }
+  .feuille h2{ margin:0; font-size:22px; }
+  .feuille p{ margin:0; font-size:16px; font-weight:600; color:var(--tamarin-2); line-height:1.4; }
+  .feuille .actions{ display:grid; grid-template-columns:1fr 1.4fr; gap:var(--s2); margin-top:var(--s2); }
+  .feuille .actions button{ min-height:56px; border:0; border-radius:var(--r); font-size:17px; font-weight:900; cursor:pointer; }
+  .feuille .actions .ok{ background:var(--tamarin); color:var(--blanc); }
+  .feuille .actions .ok:disabled{ background:var(--farine-2); color:var(--tamarin-3); cursor:default; }
+  .feuille .actions .non{ background:var(--farine-2); color:var(--tamarin); }
+  .feuille .actions .non:only-child{ grid-column:1 / -1; }
+  #history-list{ max-height:55vh; overflow-y:auto; }
+  .choix{ display:flex; flex-wrap:wrap; gap:var(--s2); }
+  .choix button{ min-height:44px; padding:0 var(--s4); border:0; border-radius:12px; background:var(--farine-2); color:var(--tamarin); font-size:15px; font-weight:800; cursor:pointer; }
+  .choix button.on{ background:var(--tamarin); color:var(--blanc); }
+  #toast{ background:var(--tamarin); color:var(--blanc); }
+
+  /* ---- Portrait : la grille au-dessus, le ticket en bas, toujours visible ---- */
   @media (max-width: 900px){
-    header > span{ display:none; }
-    .tab-btn{ padding:0 12px; }
-    /* en portrait, la caisse défile d'un seul bloc : sinon l'historique
-       recouvre le bas du panier et masque « Valider la commande » */
-    #view-caisse .col{ flex:0 0 auto; overflow:visible; min-height:auto; }
+    #barre{ padding:var(--s2) var(--s4); flex-wrap:wrap; }
+    #barre .infos .detail{ display:none; }
+    #corps{ flex-direction:column; }
+    .etapes{ flex:0 0 auto; flex-direction:row; overflow-x:auto; padding:var(--s3) var(--s3) 0; }
+    .etape{ flex:0 0 auto; grid-template-columns:32px auto; }
+    #view-caisse{ flex-direction:column; overflow:hidden; }
+    #vente-gauche{ flex:1 1 auto; }
+    #cote{ flex:0 0 428px; flex-direction:row; min-height:0; }
+    #ticket{ flex:1 1 64%; }
+    #retraits{ flex:1 1 36%; overflow-y:auto; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
   }
 </style>
 </head>
-<body>
+<body class="m-vendre">
 <div id="app">
-  <div id="toast"></div>
+  <div id="toast" role="status"></div>
 
-  <div id="change-overlay" class="hidden">
-    <div class="change-box">
-      <div class="change-title">Commande #<span id="change-order-num"></span> validée</div>
-      <div class="change-total-row">
-        <span>Total</span>
-        <span id="change-total">0,00 €</span>
-      </div>
-      <label class="change-label">Montant reçu
-        <input id="change-received" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
-      </label>
-      <div id="change-result" class="change-result"></div>
-      <div class="change-buttons">
-        <button id="change-back-btn">Modifier la commande</button>
-        <button id="change-done-btn">Nouvelle commande</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="out-overlay" class="hidden">
-    <div class="out-box">
-      <div id="out-title" class="out-title">Épuisé</div>
-      <p id="out-msg" class="out-msg"></p>
-      <div class="out-buttons">
-        <button id="out-cancel-btn">J'ai compris</button>
-        <button id="out-force-btn">Ajouter quand même</button>
-      </div>
-    </div>
-  </div>
-
-  <header>
+  <!-- Barre : on sait où on est sans lire. Jamais le chiffre d'affaires en permanence :
+       l'écran est tourné vers les clients. -->
+  <div id="barre">
     <h1>MamaZan</h1>
-    <span>Caisse locale</span>
-    <nav id="tabs">
-      <button id="tab-caisse" class="tab-btn active">Caisse</button>
-      <button id="tab-commandes" class="tab-btn">Commandes<span id="tab-commandes-count" class="tab-count hidden"></span></button>
-      <button id="tab-gestion" class="tab-btn">Gestion</button>
-      <button id="tab-fin" class="tab-btn">Fin de journée</button>
+    <nav class="moments" aria-label="Onglets">
+      <button id="tab-caisse" data-tab="caisse" class="on">Caisse</button><button id="tab-produits" data-tab="produits">Produits</button><button id="tab-stockargent" data-tab="stockargent">Stock et argent</button><button id="tab-commandes" data-tab="commandes">Commandes<span id="tab-commandes-count" class="tab-count hidden"></span></button>
+      <!-- masqués (version simple) : les trois moments de la version précédente -->
+      <button id="tab-preparer" class="masque" data-moment="preparer">Préparer</button><button id="tab-fin" class="masque" data-moment="compter">Compter</button>
     </nav>
-  </header>
-
-  <nav id="subnav" class="hidden">
-    <button class="subtab-btn active" data-view="produits">Carte</button>
-    <button class="subtab-btn" data-view="stock">Stock</button>
-    <button class="subtab-btn" data-view="achats">Achats</button>
-    <button class="subtab-btn" data-view="argent">Argent</button>
-  </nav>
-
-  <div id="alert-bar" class="hidden"></div>
-
-  <main id="view-caisse">
-    <div class="col col-left">
-      <div class="panel">
-        <h2>Produits</h2>
-        <div id="products"></div>
-      </div>
-
-      <div class="panel" id="cart-panel">
-        <h2>Commande en cours</h2>
-        <div id="cart-lines"></div>
-        <div id="cart-footer">
-          <div class="cart-total-row">
-            <span>Total</span>
-            <span id="cart-total">0,00 €</span>
-          </div>
-          <button id="validate-btn" disabled>Valider la commande</button>
-          <button id="clear-cart-btn">Vider le panier</button>
-        </div>
-      </div>
+    <div class="infos" id="infos">
+      <span class="detail num" id="infos-vente"></span>
+      <button class="barre-btn" id="plus-btn" aria-expanded="false">Plus…</button>
+      <!-- masqués (version simple) -->
+      <button class="barre-btn masque" id="tab-carnet" data-goto="carnet">Carnet</button>
+      <button class="barre-btn masque" id="tab-atelier" data-goto="produits">Atelier</button>
     </div>
+  </div>
 
-    <div class="col col-right">
-      <div class="panel" id="history-panel">
-        <h2>Commandes du jour</h2>
-        <div id="history-list"></div>
-      </div>
+  <div id="alert-bar" class="hidden masque"></div>
+
+  <div id="corps">
+    <nav class="etapes hidden masque" id="etapes-preparer" aria-label="Étapes de la préparation">
+      <button class="etape" data-goto="point"><i>1</i><span>Le point</span></button>
+      <button class="etape" data-goto="commandes"><i>2</i><span>Commandes</span></button>
+      <button class="etape" data-goto="stock"><i>3</i><span>Stock</span></button>
+      <button class="etape" data-goto="achats"><i>4</i><span>Achats</span></button>
+      <button class="etape" data-goto="argent"><i>5</i><span>La caisse</span></button>
+      <button class="etape" data-goto="ouvrir"><i>6</i><span>Ouvrir la vente</span></button>
+    </nav>
+    <nav class="etapes hidden masque" id="etapes-compter" aria-label="Étapes du comptage">
+      <button class="etape" data-goto="fin"><i>1</i><span>Ce que j'ai vendu</span></button>
+      <button class="etape" data-goto="reste"><i>2</i><span>Ce qui reste</span></button>
+      <button class="etape" data-goto="conso"><i>3</i><span>Ce que j'ai consommé</span></button>
+      <button class="etape" data-goto="compte"><i>4</i><span>La caisse</span></button>
+      <button class="etape" data-goto="gain"><i>5</i><span>Ce que j'ai gagné</span></button>
+      <button class="etape" data-goto="cloture"><i>6</i><span>Sauvegarder et clôturer</span></button>
+    </nav>
+
+  <!-- ===================== VENDRE ===================== -->
+  <main id="view-caisse">
+    <div id="vente-gauche">
+      <nav id="cat-tabs" role="tablist" aria-label="Catégories"></nav>
+      <div id="products" aria-label="Produits"></div>
+    </div>
+    <div id="cote">
+      <section id="retraits" class="hidden" aria-label="Commandes à remettre"></section>
+      <section id="ticket" aria-label="Ticket du client">
+        <div id="bandeau" class="hidden" role="status"></div>
+        <header><h2 id="ticket-titre">Client 1</h2><button id="clear-cart-btn">Vider</button></header>
+        <div id="cart-lines"></div>
+        <div id="ticket-total"><span>Total</span><b class="num" id="cart-total">0,00 €</b></div>
+        <div id="encaisser">
+          <button id="validate-btn" disabled>Compte juste</button>
+          <button class="billet num" data-billet="5" disabled>5 €</button>
+          <button class="billet num" data-billet="10" disabled>10 €</button>
+          <button class="billet num" data-billet="20" disabled>20 €</button>
+          <button id="autre-btn" disabled>Autre…</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===================== PRÉPARER ===================== -->
+  <main id="view-point" class="hidden">
+    <div class="col">
+      <h2 class="titre-ecran" id="point-date">Le point</h2>
+      <div id="point-contenu"></div>
     </div>
   </main>
 
@@ -926,7 +691,7 @@
         <h2 id="pre-form-title">Nouvelle commande</h2>
         <div class="g-form">
           <input id="pre-name" type="text" autocapitalize="words" autocorrect="off" autocomplete="off" placeholder="Nom du client">
-          <input id="pre-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Téléphone">
+          <input id="pre-phone" class="masque" type="tel" inputmode="tel" autocomplete="off" placeholder="Téléphone">
           <div class="seg">
             <button class="seg-btn on" id="pre-date-tomorrow">Demain</button>
             <button class="seg-btn" id="pre-date-today">Aujourd'hui</button>
@@ -944,38 +709,20 @@
         <button class="g-btn wide" id="pre-save-btn">Enregistrer la commande</button>
         <button class="g-btn ghost wide hidden" id="pre-cancel-edit-btn">Abandonner la modification</button>
         <p id="pre-status" class="g-status"></p>
-        <p class="g-hint">Le paiement se fait au retrait. Les produits suivis en stock sont mis de côté pour les commandes du jour : la caisse ne les propose plus au comptoir. Le téléphone reste sur cette tablette, il n'est jamais envoyé dans la sauvegarde.</p>
-      </div>
-    </div>
-  </main>
-
-  <main id="view-produits" class="hidden">
-    <div class="col">
-      <div class="panel" id="manage-panel">
-        <h2>Gérer les produits</h2>
-        <div id="manage-list"></div>
-        <div id="add-product-form">
-          <input id="add-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Nom du nouveau produit">
-          <input id="add-price" type="text" inputmode="decimal" autocomplete="off" placeholder="Prix (1,20)">
-          <button id="add-product-btn">Ajouter le produit</button>
-        </div>
-        <p id="manage-status"></p>
-        <p id="manage-hint">Les changements s'appliquent tout de suite à la caisse et restent mémorisés sur cette tablette. Les commandes déjà enregistrées gardent leurs anciens prix et noms.</p>
+        <p class="g-hint">Le paiement se fait au retrait, depuis la caisse : la commande se modifie encore à ce moment-là. Les produits suivis en stock sont mis de côté pour les commandes du jour. Pendant la vente, la file ne voit que l'heure et l'initiale du client.</p>
       </div>
     </div>
   </main>
 
   <main id="view-stock" class="hidden">
     <div class="col">
-      <div class="panel" id="stock-panel">
-        <h2>Stock des produits</h2>
-        <div id="stock-list"></div>
-        <p id="stock-status"></p>
-        <p id="stock-hint">Appuyez sur « Illimité » pour suivre le stock d'un article, puis saisissez la quantité préparée. Les articles laissés en « Illimité » ne sont jamais comptés. Chaque vente fait baisser le compteur, et la caisse prévient quand il tombe à 0.</p>
+      <div class="panel" id="capacity-panel">
+        <h2>Portions encore possibles</h2>
+        <div id="capacity-list"></div>
+        <p class="g-hint">Estimation à partir du stock de matières et de la consommation constatée. Un produit sans matière rattachée n'apparaît pas ici.</p>
       </div>
-
       <div class="panel" id="supplies-panel">
-        <h2>Matières premières &amp; consommables</h2>
+        <h2>Matières et consommables</h2>
         <p id="sup-verify-hint" class="g-hint hidden"></p>
         <div id="supplies-list"></div>
         <div class="g-form">
@@ -991,13 +738,7 @@
           <button class="g-btn" id="sup-add-btn">Ajouter</button>
         </div>
         <p id="supplies-status" class="g-status"></p>
-        <p class="g-hint">Touchez un article pour indiquer quels produits le consomment. À la clôture, vous saisissez ce que vous avez réellement utilisé et l'app en déduit toute seule la consommation par portion.</p>
-      </div>
-
-      <div class="panel" id="capacity-panel">
-        <h2>Portions encore possibles</h2>
-        <div id="capacity-list"></div>
-        <p class="g-hint">Estimation à partir du stock de matières et de la consommation constatée. Un produit sans matière rattachée n'apparaît pas ici.</p>
+        <p class="g-hint">Touchez un article pour indiquer quels produits le consomment. Au comptage, vous saisissez ce que vous avez réellement utilisé et l'app en déduit toute seule la consommation par portion.</p>
       </div>
     </div>
   </main>
@@ -1034,8 +775,98 @@
 
   <main id="view-argent" class="hidden">
     <div class="col">
+    </div>
+  </main>
+
+  <main id="view-ouvrir" class="hidden">
+    <div class="col">
+      <h2 class="titre-ecran">Ouvrir la vente</h2>
+      <p class="phrase" id="ouvrir-resume"></p>
+      <button id="ouvrir-btn">Ouvrir la vente</button>
+    </div>
+  </main>
+
+  <!-- ===================== COMPTER ===================== -->
+  <!-- Compter s'ouvre sur ce qui a été vendu, sans montant : des clients
+       peuvent encore être devant l'écran. L'argent vient à l'étape « gagné ». -->
+  <main id="view-fin" class="hidden">
+    <div class="col">
+      <div class="panel" id="summary-panel">
+        <h2>Ce que j'ai vendu</h2>
+        <p class="phrase" id="vendu-phrase"></p>
+        <div id="summary-list"></div>
+      </div>
+      <button class="suivant" data-goto="reste">Ce qui reste →</button>
+    </div>
+  </main>
+
+  <main id="view-reste" class="hidden">
+    <div class="col">
+      <div class="panel" id="reste-panel">
+        <h2>Ce qui reste</h2>
+        <p class="phrase" id="reste-phrase"></p>
+        <div id="reste-list"></div>
+        <p class="g-hint">Gardé : le reste repart en stock pour la prochaine vente. Jeté : il sort du stock à la clôture. Votre choix est retenu pour chaque produit.</p>
+      </div>
+      <button class="suivant" data-goto="conso">Ce que j'ai consommé →</button>
+    </div>
+  </main>
+
+  <main id="view-conso" class="hidden">
+    <div class="col">
+      <div class="panel" id="usage-panel">
+        <h2>Ce que j'ai consommé</h2>
+        <div id="usage-list"></div>
+        <button class="g-btn wide" id="usage-save-btn">Enregistrer la consommation</button>
+        <p id="usage-status" class="g-status"></p>
+        <p class="g-hint">Saisissez ce que vous avez réellement consommé aujourd'hui, dans l'unité de l'article (par exemple 5 paquets de farine). Le stock est déduit, et l'app recale toute seule la consommation par portion à partir de ce qui a été vendu.</p>
+      </div>
+      <button class="suivant" data-goto="compte">La caisse →</button>
+    </div>
+  </main>
+
+  <main id="view-compte" class="hidden">
+    <div class="col">
+      <button class="suivant" data-goto="gain">Ce que j'ai gagné →</button>
+    </div>
+  </main>
+
+  <main id="view-gain" class="hidden">
+    <div class="col">
+      <div class="panel" id="bilan-panel">
+        <h2>Ce que j'ai gagné</h2>
+        <div id="summary-total-row">
+          <span>Chiffre d'affaires</span>
+          <span id="summary-total">0,00 €</span>
+        </div>
+        <div class="kpi-grid" id="bilan-kpis"></div>
+        <p id="bilan-hint" class="g-hint hidden"></p>
+      </div>
+      <div class="panel" id="margin-panel">
+        <h2>Marge par produit</h2>
+        <div id="margin-list"></div>
+        <p class="g-hint">Le coût de revient vient des matières rattachées à chaque produit et de leur coût moyen d'achat. Les chiffres marqués « ≈ » sont estimés : ils se précisent à chaque journée comptée.</p>
+      </div>
+      <button class="suivant" data-goto="cloture">Sauvegarder et clôturer →</button>
+    </div>
+  </main>
+
+  <main id="view-cloture" class="hidden">
+    <div class="col">
+    </div>
+  </main>
+
+  <!-- ===================== STOCK ET ARGENT ===================== -->
+  <main id="view-stockargent" class="hidden">
+    <div class="col">
+      <div class="panel" id="stock-panel">
+        <h2>Produits finis</h2>
+        <div id="stock-list"></div>
+        <p id="stock-status"></p>
+        <p id="stock-hint">Appuyez sur « Illimité » pour suivre le stock d'un article, puis saisissez la quantité préparée. Les articles laissés en « Illimité » ne sont jamais comptés. Chaque vente fait baisser le compteur, et la jauge de la caisse descend avec lui.</p>
+      </div>
       <div class="panel" id="cash-panel">
-        <h2>Caisse</h2>
+        <h2>Argent dans la caisse</h2>
         <div class="g-row">
           <span class="g-row-name">Fond de caisse du jour</span>
           <input id="cash-opening" class="g-num" type="text" inputmode="decimal" autocomplete="off" value="0">
@@ -1044,7 +875,6 @@
         <div class="kpi-grid" id="cash-kpis"></div>
         <p id="cash-status" class="g-status"></p>
       </div>
-
       <div class="panel" id="move-panel">
         <h2>Apport ou retrait</h2>
         <div class="g-form">
@@ -1058,45 +888,10 @@
         </div>
         <p id="move-status" class="g-status"></p>
       </div>
-
       <div class="panel" id="movements-panel">
         <h2>Mouvements du jour</h2>
         <div id="movements-list"></div>
       </div>
-
-      <div class="panel" id="margin-panel">
-        <h2>Marge par produit</h2>
-        <div id="margin-list"></div>
-        <p class="g-hint">Le coût de revient vient des matières rattachées à chaque produit et de leur coût moyen d'achat. Il reste une estimation tant que vous n'avez pas saisi quelques journées de consommation réelle.</p>
-      </div>
-    </div>
-  </main>
-
-  <main id="view-fin" class="hidden">
-    <div class="col">
-      <div class="panel" id="summary-panel">
-        <h2>Résumé du jour</h2>
-        <div id="summary-list"></div>
-        <div id="summary-total-row">
-          <span>Chiffre d'affaires</span>
-          <span id="summary-total">0,00 €</span>
-        </div>
-      </div>
-
-      <div class="panel" id="bilan-panel">
-        <h2>Bilan de la journée</h2>
-        <div class="kpi-grid" id="bilan-kpis"></div>
-        <p id="bilan-hint" class="g-hint hidden"></p>
-      </div>
-
-      <div class="panel" id="usage-panel">
-        <h2>Ce qui a été utilisé</h2>
-        <div id="usage-list"></div>
-        <button class="g-btn wide" id="usage-save-btn">Enregistrer la consommation</button>
-        <p id="usage-status" class="g-status"></p>
-        <p class="g-hint">Saisissez ce que vous avez réellement consommé aujourd'hui, dans l'unité de l'article (par exemple 5 paquets de farine). Le stock est déduit, et l'app recale toute seule la consommation par portion à partir de ce qui a été vendu.</p>
-      </div>
-
       <div class="panel" id="count-panel">
         <h2>Comptage de la caisse</h2>
         <div class="g-row">
@@ -1107,7 +902,17 @@
         <div class="kpi-grid" id="count-kpis"></div>
         <p id="count-status" class="g-status"></p>
       </div>
-
+      <div class="panel" id="reset-panel">
+        <h2>Clôturer la journée</h2>
+        <button id="reset-day-btn">Clôturer la journée</button>
+        <div id="reset-confirm" class="hidden">
+          <p>La journée sera archivée dans le Carnet et sauvegardée, puis la caisse repartira à zéro pour demain. Les restes marqués « jeté » sortent du stock. Continuer ?</p>
+          <div id="reset-confirm-buttons">
+            <button id="reset-confirm-no">Annuler</button>
+            <button id="reset-confirm-yes">Oui, clôturer</button>
+          </div>
+        </div>
+      </div>
       <div class="panel" id="backup-panel">
         <h2>Sauvegarde GitHub</h2>
         <button id="backup-btn">Sauvegarder sur GitHub</button>
@@ -1135,26 +940,82 @@
         </div>
         <p id="backup-pending" class="backup-status err hidden"></p>
       </div>
+    </div>
+  </main>
 
+  <!-- ===================== CARNET ET ATELIER ===================== -->
+  <main id="view-carnet" class="hidden">
+    <div class="col">
       <div class="panel" id="archive-panel">
-        <h2>Journées précédentes</h2>
+        <h2>Carnet : journées précédentes</h2>
         <div id="archive-list"></div>
-      </div>
-
-      <div class="panel" id="reset-panel">
-        <h2>Nouvelle journée</h2>
-        <button id="reset-day-btn">Clôturer la journée</button>
-        <div id="reset-confirm" class="hidden">
-          <p>La journée sera archivée dans « Journées précédentes », puis la caisse repartira à zéro pour demain. Continuer ?</p>
-          <div id="reset-confirm-buttons">
-            <button id="reset-confirm-no">Annuler</button>
-            <button id="reset-confirm-yes">Oui, clôturer</button>
-          </div>
-        </div>
       </div>
     </div>
   </main>
+
+  <main id="view-produits" class="hidden">
+    <div class="col">
+      <div class="panel" id="categories-panel">
+        <h2>Catégories</h2>
+        <div id="cat-list"></div>
+        <div class="g-form">
+          <input id="cat-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" maxlength="30" placeholder="Nouvelle catégorie (ex : Plats)">
+          <button class="g-btn" id="cat-add-btn">Ajouter la catégorie</button>
+        </div>
+        <p id="cat-status" class="g-status"></p>
+        <p class="g-hint">Chaque catégorie devient un onglet de la caisse. Une catégorie ne se supprime que vide : rangez d'abord ses produits ailleurs.</p>
+      </div>
+
+      <div class="panel" id="manage-panel">
+        <h2>Produits</h2>
+        <div id="manage-list"></div>
+        <div id="add-product-form">
+          <input id="add-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" placeholder="Nom du nouveau produit">
+          <input id="add-price" type="text" inputmode="decimal" autocomplete="off" placeholder="Prix (1,20)">
+          <select id="add-cat" aria-label="Catégorie du nouveau produit"></select>
+          <button id="add-product-btn">Ajouter le produit</button>
+        </div>
+        <p id="manage-status"></p>
+        <p id="manage-hint">Les changements s'appliquent tout de suite à la caisse. Les ventes et commandes déjà enregistrées gardent leurs anciens prix et noms.</p>
+      </div>
+    </div>
+  </main>
+  </div>
 </div>
+
+<!-- « Plus… » : ce qu'on va chercher pendant la vente, dont le montant encaissé -->
+<div id="plus" class="hidden" role="menu">
+  <button id="plus-montant" class="montant">Encaissé aujourd'hui <b class="num" id="plus-montant-v">Afficher</b></button>
+  <button data-feuille="sortie">Sortie d'argent</button>
+  <button id="plus-commande">Nouvelle commande</button>
+  <button data-feuille="ventes">Ventes du jour</button>
+  <button data-feuille="fin-vente" class="masque">Fin de vente</button>
+</div>
+
+<!-- Feuilles : une à la fois, fermées par leur bouton ou un toucher à côté -->
+<div id="feuille-fond" class="hidden">
+  <section id="feuille-ventes" class="feuille hidden" role="dialog" aria-label="Ventes du jour">
+    <h2>Ventes du jour</h2>
+    <div id="history-panel"><div id="history-list"></div></div>
+    <div class="actions"><button class="non" data-fermer>Fermer</button></div>
+  </section>
+  <section id="feuille-sortie" class="feuille hidden" role="dialog" aria-label="Sortie d'argent">
+    <h2>Sortie d'argent</h2>
+    <div class="ecran-pave"><span>Montant</span><b class="num" id="sortie-v">0 €</b></div>
+    <div class="choix" id="sortie-motifs">
+      <button data-motif="Achat">Achat</button><button data-motif="Monnaie">Monnaie</button><button data-motif="Retrait">Retrait</button>
+    </div>
+    <div class="touches" id="sortie-touches"></div>
+    <div class="actions"><button class="non" data-fermer>Annuler</button><button class="ok" id="sortie-ok" disabled>Enregistrer</button></div>
+  </section>
+  <section id="feuille-fin-vente" class="feuille hidden" role="dialog" aria-label="Fin de vente">
+    <h2>Fermer la vente ?</h2>
+    <p id="fin-vente-texte">Compter s'ouvre sur « Ce que j'ai vendu ». Une nouvelle vente rouvre la caisse.</p>
+    <div class="actions"><button class="non" data-fermer>Continuer à vendre</button><button class="ok" id="fin-vente-ok">Fermer la vente</button></div>
+  </section>
+</div>
+
+<div id="bulle" class="hidden" role="status"></div>
 
 <script>
 (function(){
@@ -1241,15 +1102,59 @@
   var PRODUCTS_KEY = 'mamazan_products_v1';
 
   // Un produit est soit suivi en stock (tracked), soit en quantité illimitée.
+  // short : nom court affiché sur la tuile (facultatif, le nom complet reste
+  // celui des tickets et de la sauvegarde). stockRef : la quantité préparée,
+  // qui sert de plein à la jauge. leftover : ce que deviennent les restes
+  // (« keep » gardés, « throw » jetés), retenu d'une journée à l'autre.
   function normalizeProduct(p){
+    var stock = (typeof p.stock === 'number' && isFinite(p.stock)) ? Math.round(p.stock) : 0;
     return {
       id: p.id,
       name: p.name,
       price: p.price,
       tracked: p.tracked === true,
-      stock: (typeof p.stock === 'number' && isFinite(p.stock)) ? Math.round(p.stock) : 0
+      stock: stock,
+      short: typeof p.short === 'string' ? p.short.trim().slice(0, 30) : '',
+      stockRef: (typeof p.stockRef === 'number' && isFinite(p.stockRef) && p.stockRef > 0) ? Math.round(p.stockRef) : Math.max(stock, 0),
+      leftover: p.leftover === 'throw' ? 'throw' : 'keep',
+      category: typeof p.category === 'string' ? p.category : ''
     };
   }
+
+  // ---------- Catégories ----------
+  // C'est l'utilisateur qui crée ses catégories et y range ses produits.
+  // Un produit sans catégorie (ou dont la catégorie n'existe plus) est rangé
+  // dans « Sans catégorie », qui n'existe que tant qu'elle contient un produit.
+  var CATEGORIES_KEY = 'mamazan_categories_v1';
+  var SANS_CATEGORIE = 'Sans catégorie';
+
+  function normalizeCategory(c){
+    if(!c || typeof c.id !== 'string' || !c.id || typeof c.name !== 'string' || !c.name.trim()) return null;
+    return { id: c.id, name: c.name.trim().slice(0, 30) };
+  }
+  function loadCategories(){
+    try {
+      var raw = localStorage.getItem(CATEGORIES_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          var seen = {};
+          return parsed.map(normalizeCategory).filter(function(c){ if(!c || seen[c.id]) return false; seen[c.id] = true; return true; });
+        }
+      }
+    } catch(e){}
+    return [];
+  }
+  function saveCategories(){ storeItem(CATEGORIES_KEY, CATEGORIES); }
+  var CATEGORIES = loadCategories();
+  function findCategory(id){ for(var i=0;i<CATEGORIES.length;i++){ if(CATEGORIES[i].id === id) return CATEGORIES[i]; } return null; }
+  // la catégorie d'un produit, telle qu'on l'affiche : '' = « Sans catégorie »
+  function productCategory(p){ return p.category && findCategory(p.category) ? p.category : ''; }
+  function categoryName(id){ var c = findCategory(id); return c ? c.name : SANS_CATEGORIE; }
+  function productsIn(id){ return PRODUCTS.filter(function(p){ return productCategory(p) === id; }); }
+
+  // Le nom court saisi dans l'atelier, sinon le nom complet.
+  function tileName(p){ return p.short || p.name; }
 
   function loadProducts(){
     try {
@@ -1289,11 +1194,14 @@
           if(typeof parsed.nextOrderNumber !== 'number') parsed.nextOrderNumber = 1;
           if(!parsed.cart || typeof parsed.cart !== 'object') parsed.cart = {};
           if(!parsed.usage || typeof parsed.usage !== 'object') parsed.usage = {};
+          // « Ouvrir la vente » et « Fin de vente » : heures ISO, absentes avant la v15
+          if(typeof parsed.openedAt !== 'string') parsed.openedAt = null;
+          if(typeof parsed.closedAt !== 'string') parsed.closedAt = null;
           return parsed;
         }
       }
     } catch(e){}
-    return { orders: [], nextOrderNumber: 1, cart: {}, usage: {} };
+    return { orders: [], nextOrderNumber: 1, cart: {}, usage: {}, openedAt: null, closedAt: null };
   }
 
   function saveState(){
@@ -1324,18 +1232,12 @@
   var resetNoBtn      = document.getElementById('reset-confirm-no');
   var archiveListEl   = document.getElementById('archive-list');
   var toastEl         = document.getElementById('toast');
-  var changeOverlayEl = document.getElementById('change-overlay');
-  var changeOrderNumEl= document.getElementById('change-order-num');
-  var changeTotalEl   = document.getElementById('change-total');
-  var changeReceivedEl= document.getElementById('change-received');
-  var changeResultEl  = document.getElementById('change-result');
-  var changeDoneBtn   = document.getElementById('change-done-btn');
-  var changeBackBtn   = document.getElementById('change-back-btn');
-  var outOverlayEl    = document.getElementById('out-overlay');
-  var outTitleEl      = document.getElementById('out-title');
-  var outMsgEl        = document.getElementById('out-msg');
-  var outCancelBtn    = document.getElementById('out-cancel-btn');
-  var outForceBtn     = document.getElementById('out-force-btn');
+  var ticketEl        = document.getElementById('ticket');
+  var ticketTitreEl   = document.getElementById('ticket-titre');
+  var bandeauEl       = document.getElementById('bandeau');
+  var autreBtn        = document.getElementById('autre-btn');
+  var retraitsEl      = document.getElementById('retraits');
+  var infosVenteEl    = document.getElementById('infos-vente');
 
   // ---------- Stock ----------
   // Quantité encore disponible, panier en cours et commandes du jour déduits.
@@ -1347,24 +1249,68 @@
   }
 
   // ---------- Rendu ----------
+  // Tuile : nom (court s'il existe), prix, et pour les produits suivis une jauge
+  // épaisse lisible à bout de bras. Le chiffre n'apparaît qu'à 5 ou moins.
+  // Épuisé au repos : hachuré, nom barré, gros 0, aucun bouton.
+  var forcerId = null, forcerAt = 0, forcerTimer = null, flashId = null;
+
+  // ---------- Caisse : une catégorie à la fois ----------
+  // Les onglets sont les catégories qui contiennent au moins un produit, dans
+  // l'ordre de l'écran Produits ; « Sans catégorie » en dernier s'il sert.
+  // Le ticket, lui, garde les produits de toutes les catégories.
+  var catTabsEl = document.getElementById('cat-tabs');
+  var catCaisse = null;
+
+  function caisseCategories(){
+    var ids = CATEGORIES.map(function(c){ return c.id; }).concat(['']);
+    return ids.filter(function(id){ return productsIn(id).length > 0; });
+  }
+
+  function renderCatTabs(){
+    var ids = caisseCategories();
+    if(ids.indexOf(catCaisse) === -1) catCaisse = ids.length ? ids[0] : null;
+    catTabsEl.innerHTML = ids.map(function(id){
+      var on = id === catCaisse;
+      return '<button class="cat-tab" role="tab" data-cat="' + escapeAttr(id) + '" aria-selected="' + on + '">' + escapeHtml(categoryName(id)) + '</button>';
+    }).join('');
+  }
+
+  catTabsEl.addEventListener('click', function(e){
+    var b = e.target.closest('[data-cat]'); if(!b) return;
+    if(b.dataset.cat === catCaisse) return;
+    catCaisse = b.dataset.cat;
+    forcerId = null; // le bouton « Vendre quand même » appartient à la catégorie qu'on quitte
+    renderProducts();
+    productsEl.scrollTop = 0;
+  });
+
   function renderProducts(){
-    productsEl.innerHTML = PRODUCTS.map(function(p){
-      var stockHtml = '', outClass = '';
+    renderCatTabs();
+    productsEl.innerHTML = PRODUCTS.filter(function(p){ return productCategory(p) === catCaisse; }).map(function(p){
+      var cls = p.tracked ? '' : ' libre', pied = '', jauge = '', dit = '';
       if(p.tracked){
         var left = available(p.id);
-        if(left <= 0){
-          outClass = ' out';
-          stockHtml = '<span class="product-stock">Épuisé</span>';
-        } else {
-          stockHtml = '<span class="product-stock">reste '+left+'</span>';
+        var ref = Math.max(p.stockRef, p.stock, 1);
+        var pct = Math.max(0, Math.min(100, Math.round(Math.max(0, left) / ref * 100)));
+        if(left <= 0) cls = ' out';
+        else if(left <= 5) cls = ' bas';
+        else if(pct <= 35) cls = ' mi';
+        if(left <= 5){
+          pied = '<span class="product-stock num"><b>' + Math.max(0, left) + '</b><small>' +
+            (left <= 0 ? 'épuisé' : 'restant' + (left > 1 ? 's' : '')) + '</small></span>';
         }
+        jauge = '<span class="jauge" aria-hidden="true"><i style="width:' + pct + '%"></i></span>';
+        dit = left <= 0 ? ', épuisé' : ', reste ' + left;
       }
-      return '<button class="product-btn'+outClass+'" data-product="'+p.id+'">' +
-        '<span class="product-name">'+p.name+'</span>' +
-        '<span class="product-price">'+formatEuro(p.price)+'</span>' +
-        stockHtml +
+      var forcer = forcerId === p.id
+        ? '<span class="forcer" data-forcer="' + p.id + '" role="button">Vendre quand même</span>' : '';
+      return '<button class="product-btn' + cls + (flashId === p.id ? ' flash' : '') + '" data-product="' + p.id + '" title="' + escapeAttr(p.name) + '" aria-label="' + escapeAttr(p.name + ', ' + formatEuro(p.price) + dit) + '">' +
+        '<span class="product-name">' + escapeHtml(tileName(p)) + '</span>' +
+        '<span class="pied"><span class="product-price num">' + formatEuro(p.price) + '</span>' + pied + '</span>' +
+        jauge + forcer +
         '</button>';
     }).join('');
+    flashId = null;
   }
 
   function calcCartTotal(){
@@ -1376,32 +1322,59 @@
     return total;
   }
 
-  function renderCart(){
-    var ids = Object.keys(state.cart).filter(function(id){ return state.cart[id] > 0; });
+  // Commande à l'avance chargée dans le ticket pour être remise et payée.
+  // Gardée en mémoire seulement : si l'app redémarre, la commande reste « prête ».
+  var remise = null;
 
-    if(ids.length === 0){
-      cartLinesEl.innerHTML = '<p class="empty-hint">Touchez un produit ci-dessus pour commencer une commande.</p>';
+  function remiseOrder(){ var o = remise ? findPreorder(remise) : null; return o && isActivePreorder(o) ? o : null; }
+
+  // Total de ce qui est dans le ticket : le panier, ou la commande à remettre (prix promis).
+  function ticketTotal(){ var o = remiseOrder(); return o ? o.total : calcCartTotal(); }
+
+  // Ticket : une ligne se touche pour retirer un article. Le total reste gros,
+  // « Compte juste » est le seul aplat jaune de l'écran.
+  var ligneNeuve = null;
+  function renderCart(){
+    var o = remiseOrder();
+    if(remise && !o) remise = null;
+    var ids = Object.keys(state.cart).filter(function(id){ return state.cart[id] > 0; });
+    var nb = 0;
+
+    if(o){
+      // la commande se modifie ici : toucher une ligne en retire un, toucher une tuile en ajoute
+      cartLinesEl.innerHTML = o.items.map(function(it){
+        nb += it.qty;
+        return '<button class="ligne' + (ligneNeuve === it.id ? ' neuve' : '') + '" data-action="minus1" data-id="' + escapeAttr(it.id) + '" aria-label="Retirer un ' + escapeAttr(it.name) + '">' +
+          '<span class="q num">' + it.qty + '</span><span class="n">' + escapeHtml(it.name) + '</span>' +
+          '<span class="st num">' + formatEuro(it.price * it.qty) + '</span></button>';
+      }).join('');
+    } else if(ids.length === 0){
+      cartLinesEl.innerHTML = '<p class="empty-hint">Touchez un produit. Touchez une ligne pour en retirer un.</p>';
     } else {
       cartLinesEl.innerHTML = ids.map(function(id){
         var p = findProduct(id);
         var qty = state.cart[id];
-        var subtotal = p.price * qty;
-        return '<div class="cart-line">' +
-          '<div class="cart-line-name">'+p.name+'</div>' +
-          '<div class="cart-line-controls">' +
-            '<button class="qty-btn minus" data-action="minus1" data-id="'+id+'">−1</button>' +
-            '<input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" data-id="'+id+'" value="'+qty+'">' +
-            '<button class="qty-btn plus" data-action="plus1" data-id="'+id+'">+1</button>' +
-            '<button class="qty-btn plus5" data-action="plus5" data-id="'+id+'">+5</button>' +
-          '</div>' +
-          '<div class="cart-line-subtotal">'+formatEuro(subtotal)+'</div>' +
-        '</div>';
+        nb += qty;
+        return '<button class="ligne' + (ligneNeuve === id ? ' neuve' : '') + '" data-action="minus1" data-id="' + id + '" aria-label="Retirer un ' + escapeAttr(p.name) + '">' +
+          '<span class="q num">' + qty + '</span><span class="n">' + escapeHtml(tileName(p)) + '</span>' +
+          '<span class="st num">' + formatEuro(p.price * qty) + '</span></button>';
       }).join('');
     }
+    ligneNeuve = null;
 
-    cartTotalEl.textContent = formatEuro(calcCartTotal());
-    validateBtn.disabled = ids.length === 0;
-    renderProducts(); // les pastilles « reste N » suivent le panier en cours
+    var total = ticketTotal();
+    cartTotalEl.textContent = formatEuro(total);
+    ticketTitreEl.textContent = (o ? 'Retrait ' + initiale(o.customer) : 'Client ' + state.nextOrderNumber) +
+      (nb ? ' · ' + nb + ' article' + (nb > 1 ? 's' : '') : '');
+    clearCartBtn.textContent = o ? 'Annuler' : 'Vider';
+    var vide = !o && ids.length === 0;
+    validateBtn.disabled = vide;
+    autreBtn.disabled = vide;
+    [].forEach.call(document.querySelectorAll('#encaisser .billet'), function(b){
+      b.disabled = vide || parseFloat(b.dataset.billet) < total - 0.001;
+    });
+    renderProducts(); // les jauges suivent le panier en cours
+    renderRetraits();
   }
 
   function renderHistory(){
@@ -1455,19 +1428,151 @@
     return { rows: rows, revenue: revenue };
   }
 
+  // « Ce que j'ai vendu » : des quantités, pas d'argent. Le chiffre d'affaires
+  // (summary-total) vit à l'étape « Ce que j'ai gagné ».
   function renderSummary(){
     var s = computeDaySummary();
     summaryListEl.innerHTML = s.rows.map(function(r){
       var left = r.tracked ? ' · reste '+r.left : '';
-      return '<div class="summary-line"><span>'+r.name+'</span><span>'+r.qty+' vendu'+(r.qty>1?'s':'')+left+'</span></div>';
+      return '<div class="summary-line"><span>'+escapeHtml(r.name)+'</span><span>'+r.qty+' vendu'+(r.qty>1?'s':'')+left+'</span></div>';
     }).join('');
     summaryTotalEl.textContent = formatEuro(s.revenue);
+    var n = state.orders.length, phrase = document.getElementById('vendu-phrase');
+    if(phrase){
+      var debut = state.openedAt ? heureDe(state.openedAt) : (n ? state.orders[n - 1].time : '');
+      var fin = state.closedAt ? heureDe(state.closedAt) : (n ? state.orders[0].time : '');
+      var epuises = PRODUCTS.filter(function(p){ return p.tracked && p.stock <= 0 && p.stockRef > 0; }).map(function(p){ return p.name; });
+      phrase.textContent = n ? n + ' vente' + (n > 1 ? 's' : '') + (debut ? ', de ' + debut + ' à ' + fin : '') + '.' +
+        (epuises.length ? ' Épuisé : ' + epuises.join(', ') + '.' : '') : 'Aucune vente pour l\'instant.';
+    }
   }
+
+  // ---------- Ce qui reste ----------
+  // Produits suivis encore en stock : gardés pour la prochaine vente, ou jetés.
+  // Le choix est retenu pour chaque produit (une boisson se garde, des nems se jettent).
+  function leftoverRows(){
+    return PRODUCTS.filter(function(p){ return p.tracked && p.stock > 0; }).map(function(p){
+      return { id:p.id, name:p.name, qty:p.stock, price:p.price, choice:p.leftover };
+    });
+  }
+
+  function renderRestes(){
+    var listEl = document.getElementById('reste-list'), phraseEl = document.getElementById('reste-phrase');
+    if(!listEl) return;
+    var rows = leftoverRows();
+    var jetes = rows.filter(function(r){ return r.choice === 'throw'; });
+    var valeur = jetes.reduce(function(s, r){ return s + r.qty * r.price; }, 0);
+    phraseEl.textContent = !rows.length ? 'Il ne reste rien : tout ce qui était suivi est vendu.'
+      : jetes.length ? 'À jeter : ' + jetes.map(function(r){ return r.qty + ' ' + r.name; }).join(', ') + ', soit ' + formatEuro(valeur) + ' de ventes possibles.'
+      : 'Tout est gardé pour la prochaine vente.';
+    listEl.innerHTML = rows.map(function(r){
+      return '<div class="g-row"><span class="g-row-name">' + escapeHtml(r.name) + '</span><span class="reste-qte num">' + r.qty + '</span>' +
+        '<span class="bascule">' +
+          '<button data-reste="' + r.id + '" data-choix="keep" class="' + (r.choice === 'keep' ? 'on' : '') + '" aria-pressed="' + (r.choice === 'keep') + '">Gardé</button>' +
+          '<button data-reste="' + r.id + '" data-choix="throw" class="' + (r.choice === 'throw' ? 'on jete' : '') + '" aria-pressed="' + (r.choice === 'throw') + '">Jeté</button>' +
+        '</span></div>';
+    }).join('');
+  }
+
+  document.getElementById('reste-list').addEventListener('click', function(e){
+    var b = e.target.closest('[data-reste]'); if(!b) return;
+    var p = findProduct(b.dataset.reste); if(!p) return;
+    p.leftover = b.dataset.choix === 'throw' ? 'throw' : 'keep';
+    saveProducts();
+    renderRestes();
+  });
+
+  // ---------- Le point (Préparer) ----------
+  function renderPoint(){
+    var el = document.getElementById('point-contenu');
+    if(!el) return;
+    document.getElementById('point-date').textContent = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' }).replace(/^./, function(c){ return c.toUpperCase(); });
+    var h = '';
+    // 1. la sauvegarde : seul filet si l'iPad perd ses données
+    var cfgOk = hasCfg(loadCfg());
+    if(backupState.pending){
+      h += '<div class="carte corriger"><p class="t">Journée ' + escapeHtml(backupState.pendingLabel) + ' pas encore sauvegardée.</p>' +
+        (cfgOk ? '<button class="btn-corriger fort" id="point-sauver">Sauvegarder maintenant</button>'
+               : '<button class="btn-corriger" data-goto="cloture">Régler la sauvegarde</button>') + '</div>';
+    } else if(!cfgOk){
+      h += '<div class="carte corriger"><p class="t">La sauvegarde n\'est pas réglée : si l\'iPad perd ses données, tout est perdu.</p>' +
+        '<button class="btn-corriger" data-goto="cloture">Régler la sauvegarde</button></div>';
+    }
+    // 2. la dernière journée, en une phrase
+    var archive = loadArchive();
+    if(archive.length){
+      var j = archive[0];
+      h += '<p class="phrase">Dernière vente, le ' + escapeHtml(j.dateLabel) + ' : <b class="num">' + formatEuro(j.revenue) + '</b> encaissés, ' +
+        j.ordersCount + ' commande' + (j.ordersCount > 1 ? 's' : '') + '.' +
+        (j.thrown && j.thrown.length ? ' Jeté : ' + j.thrown.map(function(t){ return t.qty + ' ' + escapeHtml(t.name); }).join(', ') + '.' : '') + '</p>';
+    } else {
+      h += '<p class="phrase">Première journée : l\'app apprendra au fil des ventes comptées.</p>';
+    }
+    // 3. ce qu'il faut faire, avec le bouton qui le fait
+    var items = [];
+    SUPPLIES.filter(needsPriceCheck).forEach(function(s){
+      items.push(['Prix de « ' + escapeHtml(s.name) + ' » à vérifier', 'Tant que ce n\'est pas fait, le coût des produits qui l\'utilisent est inconnu.', 'achats', 'Vérifier']);
+    });
+    SUPPLIES.filter(function(s){ return s.alertAt > 0 && s.qty <= s.alertAt; }).forEach(function(s){
+      items.push(['À racheter : ' + escapeHtml(s.name), 'Il reste ' + numToText(s.qty) + ' ' + escapeHtml(s.unit) + '.', 'achats', 'Acheter']);
+    });
+    var vides = PRODUCTS.filter(function(p){ return p.tracked && p.stock <= 0; });
+    if(vides.length){
+      items.push(['Quantités du jour à saisir', vides.map(function(p){ return escapeHtml(p.name); }).join(', ') + ' : stock à 0.', 'stock', 'Saisir']);
+    }
+    h += '<div class="carte"><h3>À faire (' + items.length + ')</h3>' + (items.length ? items.map(function(it){
+      return '<div class="item corriger"><span class="t">' + it[0] + '<small>' + it[1] + '</small></span><button class="btn-corriger" data-goto="' + it[2] + '">' + it[3] + '</button></div>';
+    }).join('') : '<p class="note">Rien à corriger.</p>') + '</div>';
+    // 4. les commandes du jour
+    var today = dayOffsetKey(0);
+    var cmd = PREORDERS.filter(function(o){ return o.pickupDate === today && isActivePreorder(o); }).sort(comparePreorders);
+    h += '<div class="carte"><h3>Commandes à remettre aujourd\'hui : ' + cmd.length + '</h3>' +
+      cmd.map(function(o){
+        return '<div class="item"><span class="t"><span class="num">' + (o.pickupTime || '--:--') + '</span> ' + escapeHtml(o.customer || 'Sans nom') +
+          '<small>' + o.items.map(function(it){ return it.qty + '× ' + escapeHtml(it.name); }).join(', ') + '</small></span>' +
+          '<span class="etat ' + o.status + '">' + PREORDER_LABELS[o.status] + '</span></div>';
+      }).join('') +
+      '<button class="btn-doux" data-goto="commandes">' + (cmd.length ? 'Voir les commandes' : 'Prendre une commande') + '</button></div>';
+    // 5. l'apprentissage, dit honnêtement
+    var comptees = archive.filter(function(d){ return d.costsReliable === true && d.usage && d.usage.length; }).length;
+    if(comptees < 5){
+      var pts = ''; for(var i = 0; i < 5; i++) pts += '<i' + (i < comptees ? ' class="on"' : '') + '></i>';
+      h += '<div class="apprend"><span class="points">' + pts + '</span><span>L\'app apprend encore : les conseils de production viendront après 5 journées comptées (' + comptees + ' pour l\'instant).</span></div>';
+    }
+    h += '<button class="suivant" data-goto="commandes">Commandes →</button>';
+    el.innerHTML = h;
+  }
+
+  document.getElementById('point-contenu').addEventListener('click', function(e){
+    if(e.target.closest('#point-sauver')){
+      var b = e.target.closest('#point-sauver'); b.disabled = true; b.textContent = 'Envoi…';
+      githubBackup();
+    }
+  });
+
+  // ---------- Ouvrir la vente ----------
+  function renderOuvrir(){
+    var el = document.getElementById('ouvrir-resume'); if(!el) return;
+    var today = dayOffsetKey(0);
+    var cmd = PREORDERS.filter(function(o){ return o.pickupDate === today && isActivePreorder(o); }).length;
+    var suivis = PRODUCTS.filter(function(p){ return p.tracked; });
+    el.textContent = (state.openedAt && !state.closedAt ? 'La vente est ouverte depuis ' + heureDe(state.openedAt) + '. ' : '') +
+      'Fond de caisse : ' + formatEuro(cash.opening) + '. ' +
+      (suivis.length ? suivis.length + ' produit' + (suivis.length > 1 ? 's' : '') + ' suivi' + (suivis.length > 1 ? 's' : '') + ' en stock. ' : '') +
+      cmd + ' commande' + (cmd > 1 ? 's' : '') + ' à remettre aujourd\'hui.';
+    document.getElementById('ouvrir-btn').textContent = state.openedAt && !state.closedAt ? 'Revenir à la vente' : 'Ouvrir la vente';
+  }
+
+  document.getElementById('ouvrir-btn').addEventListener('click', function(){
+    if(!state.openedAt || state.closedAt){ state.openedAt = state.openedAt && state.closedAt ? state.openedAt : new Date().toISOString(); state.closedAt = null; saveState(); }
+    showView('caisse');
+  });
 
   function renderAll(){
     renderCart();
     renderHistory();
     renderSummary();
+    renderInfosVente();
   }
 
   // ---------- Actions panier ----------
@@ -1480,30 +1585,64 @@
     renderCart();
   }
 
-  function setQty(id, value){
-    var v = Math.max(0, Math.floor(value) || 0);
-    if(v === 0) delete state.cart[id];
-    else state.cart[id] = v;
-    saveState();
+  // Ajout au panier : la tuile clignote, la ligne apparaît dans le ticket.
+  // Modifier la commande en cours de remise : ce qui était commandé garde son prix
+  // annoncé, ce qu'on ajoute est au prix de la carte. Le total se recalcule, et la
+  // commande elle-même est enregistrée tout de suite.
+  function modifierRemise(id, delta){
+    var o = remiseOrder(); if(!o) return;
+    var it = null;
+    o.items.forEach(function(x){ if(x.id === id) it = x; });
+    if(delta > 0){
+      if(it) it.qty += delta;
+      else {
+        var p = findProduct(id); if(!p) return;
+        o.items.push({ id:id, name:p.name, price:p.price, qty:delta });
+        ligneNeuve = id;
+      }
+      flashId = id;
+    } else if(it){
+      if(it.qty + delta <= 0 && o.items.length === 1){
+        showToast('Une commande garde au moins un produit. Pour l\'annuler : onglet Commandes.');
+        return;
+      }
+      it.qty += delta;
+      if(it.qty <= 0) o.items = o.items.filter(function(x){ return x.id !== id; });
+    }
+    o.total = preorderTotal(o.items);
+    forcerId = null;
+    savePreorders();
+    renderPreorders();
     renderCart();
-    var p = findProduct(id);
-    if(p && p.tracked && v > p.stock - reservedQty(id)) showToast('Stock dépassé : ' + p.name);
   }
 
-  // Ajout au panier, avec alerte si le stock suivi ne suit pas.
-  function addToCart(id, qty, silent){
-    var p = findProduct(id);
+  function addToCart(id, qty){
+    if(remiseOrder()){ modifierRemise(id, qty); return; }
+    if(!state.cart[id]) ligneNeuve = id;
     state.cart[id] = (state.cart[id] || 0) + qty;
+    flashId = id;
+    forcerId = null;
     saveState();
     renderCart();
-    if(p && !silent) showToast('+'+qty+' '+p.name);
   }
 
-  function requestAdd(id, qty, silent){
+  // Épuisé : le premier toucher ne vend pas. Il fait apparaître, sur la tuile, un
+  // petit bouton distinct « Vendre quand même » qu'il faut viser ; les touchers
+  // des 300 ms suivantes sont ignorés, et il disparaît seul au bout de 4 s.
+  // Le stock n'est qu'un repère : la vente reste possible si on en a encore.
+  function requestAdd(id, qty){
     var p = findProduct(id);
     if(!p) return;
-    if(available(id) >= qty){ addToCart(id, qty, silent); return; }
-    showOutOverlay(id, qty, silent);
+    if(available(id) >= qty){ addToCart(id, qty); return; }
+    if(forcerId === id) return; // re-toucher la tuile ne vend pas : il faut viser le bouton
+    forcerId = id; forcerAt = Date.now();
+    var reserved = reservedQty(id);
+    if(reserved > 0) showToast(reserved + ' mis de côté pour les commandes du jour');
+    renderProducts();
+    var el = productsEl.querySelector('[data-product="' + id + '"]');
+    if(el) el.classList.add('non');
+    clearTimeout(forcerTimer);
+    forcerTimer = setTimeout(function(){ if(forcerId === id){ forcerId = null; renderProducts(); } }, 4000);
   }
 
   function validateOrder(){
@@ -1535,12 +1674,20 @@
 
     state.orders.unshift(order);
     state.cart = {};
+    noteSaleTime();
     saveState();
     renderAll();
     renderStock();
     refreshGestion();
-    showChangeOverlay(order);
     maybeAutoBackup();
+    return order;
+  }
+
+  // Une vente ouvre la caisse si on a oublié « Ouvrir la vente », et la rouvre
+  // après « Fin de vente » : la vente n'est jamais bloquée.
+  function noteSaleTime(){
+    if(!state.openedAt) state.openedAt = new Date().toISOString();
+    state.closedAt = null;
   }
 
   function deleteOrder(number){
@@ -1633,14 +1780,19 @@
             lines.push('<div class="archive-detail-line"><span>Coût des matières</span><span>'+formatEuro(day.cost || 0)+'</span></div>');
             lines.push('<div class="archive-detail-line"><span>Marge'+part+'</span><span>'+formatEuro(day.margin)+'</span></div>');
           } else {
-            lines.push('<div class="archive-detail-line"><span>Marge</span><span>coût inconnu</span></div>');
+            lines.push('<div class="archive-detail-line"><span>Marge</span><span class="inconnu">coût inconnu</span></div>');
           }
         } else if(typeof day.margin === 'number'){
           // journée d'avant la correction des prix : chiffre d'affaires et quantités justes, coût faux
-          lines.push('<div class="archive-detail-line"><span>Marge</span><span>coût non fiable</span></div>');
+          lines.push('<div class="archive-detail-line"><span>Marge</span><span class="non-fiable">coût non fiable</span></div>');
         }
         if(day.cash && typeof day.cash.ecart === 'number'){
           lines.push('<div class="archive-detail-line"><span>Écart de caisse</span><span>'+formatEuro(day.cash.ecart)+'</span></div>');
+        }
+        if(day.thrown && day.thrown.length){
+          day.thrown.forEach(function(t){
+            lines.push('<div class="archive-detail-line"><span>Jeté — '+escapeHtml(t.name)+'</span><span>'+t.qty+' ('+formatEuro(t.value)+' de ventes)</span></div>');
+          });
         }
         if(day.usage && day.usage.length){
           day.usage.forEach(function(u){
@@ -1664,6 +1816,12 @@
   }
   function closeDayNow(){
     var hadMovements = cash.movements.length > 0;
+    // les restes marqués « jeté » sortent du stock ; les autres repartent demain
+    var thrown = leftoverRows().filter(function(r){ return r.choice === 'throw'; }).map(function(r){
+      var st = productCostStatus(r.id);
+      return { id:r.id, name:r.name, qty:r.qty, value:Math.round(r.qty * r.price * 100) / 100,
+        cost: st.known ? Math.round(r.qty * productCost(r.id) * 100) / 100 : null };
+    });
     if(state.orders.length > 0 || hadMovements){
       var s = computeDaySummary();
       var money = cashSummary();
@@ -1691,6 +1849,9 @@
         costsReliable: true,
         marginCoverage: d.coverage,
         usage: usageRows,
+        thrown: thrown,
+        openedAt: state.openedAt || null,
+        closedAt: state.closedAt || null,
         cash: {
           opening: cash.opening,
           depensesCaisse: money.depensesCaisse,
@@ -1720,9 +1881,13 @@
       saveBackupState();
     }
 
-    state = { orders: [], nextOrderNumber: 1, cart: {}, usage: {} };
+    state = { orders: [], nextOrderNumber: 1, cart: {}, usage: {}, openedAt: null, closedAt: null };
     pendingDelete = null;
     saveState();
+    if(thrown.length){
+      thrown.forEach(function(t){ var p = findProduct(t.id); if(p) p.stock = 0; });
+      saveProducts();
+    }
 
     // Le fond de caisse est reconduit : c'est presque toujours le même montant.
     cash.movements = [];
@@ -1751,45 +1916,33 @@
 
   // ---------- Ecouteurs ----------
   productsEl.addEventListener('click', function(e){
+    var f = e.target.closest('[data-forcer]');
+    if(f){
+      // le doigt qui rebondit ou le double toucher accidentel ne vendent jamais un épuisé
+      if(Date.now() - forcerAt < 300) return;
+      addToCart(f.dataset.forcer, 1);
+      return;
+    }
     var btn = e.target.closest('button[data-product]');
     if(!btn) return;
     requestAdd(btn.dataset.product, 1);
   });
 
   cartLinesEl.addEventListener('click', function(e){
-    var btn = e.target.closest('button[data-action]');
+    var btn = e.target.closest('button[data-action="minus1"]');
     if(!btn) return;
-    var id = btn.dataset.id;
-    var action = btn.dataset.action;
-    if(action === 'minus1') changeQty(id, -1);
-    else if(action === 'plus1') requestAdd(id, 1, true);
-    else if(action === 'plus5') requestAdd(id, 5, true);
+    if(remiseOrder()) modifierRemise(btn.dataset.id, -1);
+    else changeQty(btn.dataset.id, -1);
   });
 
-  cartLinesEl.addEventListener('change', function(e){
-    if(e.target.matches('input.qty-input')){
-      var id = e.target.dataset.id;
-      var v = parseInt(e.target.value, 10);
-      if(isNaN(v) || v < 0) v = 0;
-      setQty(id, v);
-    }
+  validateBtn.addEventListener('click', function(){ encaisser(0); });
+  [].forEach.call(document.querySelectorAll('#encaisser .billet'), function(b){
+    b.addEventListener('click', function(){ encaisser(parseFloat(b.dataset.billet)); });
   });
-
-  cartLinesEl.addEventListener('focusin', function(e){
-    if(e.target.matches('input.qty-input')){
-      e.target.select();
-    }
-  });
-
-  cartLinesEl.addEventListener('keydown', function(e){
-    if(e.target.matches('input.qty-input') && e.key === 'Enter'){
-      e.target.blur();
-    }
-  });
-
-  validateBtn.addEventListener('click', validateOrder);
+  autreBtn.addEventListener('click', ouvrirPave);
 
   clearCartBtn.addEventListener('click', function(){
+    if(remise){ remise = null; renderCart(); return; }
     state.cart = {};
     saveState();
     renderCart();
@@ -1828,169 +1981,352 @@
     renderArchive();
   });
 
-  // ---------- Confirmation visuelle d'ajout ----------
-  var toastTimer = null;
+  // ---------- Encaisser ----------
+  // Deux gestes : un produit, puis « Compte juste » (ou un billet). La vente est
+  // enregistrée tout de suite ; le bandeau dit combien rendre et permet d'annuler.
+  var bandeauTimer = null;
 
+  function encaisser(recu){
+    var o = remiseOrder(), order;
+    if(o){ remise = null; order = deliverPreorder(o); }
+    else {
+      if(Object.keys(state.cart).length === 0) return;
+      order = validateOrder();
+    }
+    if(!order) return;
+    var rendu = recu ? Math.round((recu - order.total) * 100) / 100 : 0;
+    bandeauEl.innerHTML = '<span class="t">Encaissé <span class="num">' + formatEuro(order.total) + '</span>' +
+      (rendu > 0 ? '<b class="num">À rendre ' + formatEuro(rendu) + '</b>' : '<b>Compte juste</b>') + '</span>' +
+      '<button id="annuler-btn" data-number="' + order.number + '">Annuler</button>';
+    bandeauEl.classList.remove('hidden');
+    clearTimeout(bandeauTimer);
+    bandeauTimer = setTimeout(function(){ bandeauEl.classList.add('hidden'); }, 6000);
+  }
+
+  // « Annuler » : la vente est défaite et ses articles reviennent dans le ticket
+  // (ou la commande redevient « prête », chargée dans le ticket).
+  bandeauEl.addEventListener('click', function(e){
+    var b = e.target.closest('#annuler-btn'); if(!b) return;
+    var n = parseInt(b.dataset.number, 10), order = null;
+    state.orders.forEach(function(o){ if(o.number === n) order = o; });
+    bandeauEl.classList.add('hidden');
+    if(!order) return;
+    if(order.preorderId){ var pid = order.preorderId; cancelPreorderSale(order, true); remise = pid; renderCart(); }
+    else reopenOrder(n);
+  });
+
+  // ---------- Pavé « Autre… » : jamais le clavier de l'iPad ----------
+  var pave = null;
+  function peutChiffre(s){ var dec = s.indexOf(','); return dec === -1 ? s.replace(/^0+/, '').length < 4 : s.length - dec <= 2; }
+  function tapeMontant(s, k){
+    if(k === '⌫') return s.slice(0, -1);
+    if(k === ','){ return s.indexOf(',') === -1 ? (s || '0') + ',' : s; }
+    return peutChiffre(s) ? (s === '0' ? '' : s) + k : s;
+  }
+  function valeurMontant(s){ return s === '' ? 0 : parseFloat(s.replace(',', '.')); }
+  function touchesHtml(s){
+    return ['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(function(k){
+      var off = k === '⌫' ? s === '' : (k === ',' ? s.indexOf(',') !== -1 : !peutChiffre(s));
+      return '<button data-k="' + k + '"' + (k === '⌫' ? ' aria-label="Effacer"' : '') + (off ? ' disabled' : '') + '>' + k + '</button>';
+    }).join('');
+  }
+  function renderPave(){
+    var el = document.getElementById('pave'); if(!el) return;
+    var total = ticketTotal(), v = valeurMontant(pave);
+    var d = Math.round((v - total) * 100) / 100;
+    var rendu = pave === '' ? '' : (d >= 0 ? (d === 0 ? 'Compte juste' : 'À rendre ' + formatEuro(d)) : 'Il manque ' + formatEuro(-d));
+    el.innerHTML =
+      '<div class="ecran-pave"><span>Total ' + formatEuro(total) + ' · Reçu</span><b class="num" id="pave-recu">' + (pave === '' ? '0' : pave) + ' €</b></div>' +
+      '<div class="rendu num ' + (pave === '' ? '' : (d >= 0 ? 'ok' : 'manque')) + '" id="pave-rendu">' + rendu + '</div>' +
+      '<div class="touches">' + touchesHtml(pave) + '</div>' +
+      '<div class="actions"><button id="pave-retour">Retour</button><button id="pave-ok"' + (pave !== '' && d >= 0 ? '' : ' disabled') + '>Encaisser</button></div>';
+  }
+  function ouvrirPave(){
+    if(validateBtn.disabled) return;
+    fermerPave();
+    pave = '';
+    var el = document.createElement('div'); el.id = 'pave';
+    ticketEl.appendChild(el);
+    renderPave();
+  }
+  function fermerPave(){ var el = document.getElementById('pave'); if(el) el.parentNode.removeChild(el); pave = null; }
+  ticketEl.addEventListener('click', function(e){
+    if(pave === null) return;
+    var k = e.target.closest('[data-k]');
+    if(k){ pave = tapeMontant(pave, k.dataset.k); renderPave(); return; }
+    if(e.target.closest('#pave-retour')){ fermerPave(); return; }
+    if(e.target.closest('#pave-ok')){ var v = valeurMontant(pave); fermerPave(); encaisser(v); }
+  });
+
+  // ---------- Commandes à remettre, pendant la vente ----------
+  // La file ne voit que l'heure et l'initiale (« 11:45 Mme A. ») ; le nom complet
+  // et le contenu s'affichent au toucher, 10 secondes. Le téléphone n'y est jamais.
+  var retraitsOuverts = false, retraitDetail = null, retraitTimer = null;
+
+  function initiale(nom){
+    var mots = String(nom || '').trim().split(/\s+/).filter(Boolean);
+    if(!mots.length) return 'Sans nom';
+    var lettre = function(m){ return m.charAt(0).toUpperCase() + '.'; };
+    if(mots.length > 1 && /^(m\.?|mme|mlle|mr)$/i.test(mots[0])) return mots[0] + ' ' + lettre(mots[1]);
+    return mots.slice(0, 3).map(lettre).join(' ');
+  }
+
+  function retraitsDuJour(){
+    var today = dayOffsetKey(0);
+    return PREORDERS.filter(function(o){ return isActivePreorder(o) && o.pickupDate && o.pickupDate <= today; }).sort(comparePreorders);
+  }
+
+  function renderRetraits(){
+    if(!retraitsEl) return;
+    var liste = retraitsDuJour();
+    retraitsEl.classList.toggle('hidden', liste.length === 0);
+    if(!liste.length){ retraitsEl.innerHTML = ''; return; }
+    var vus = retraitsOuverts ? liste : liste.slice(0, 1);
+    var occupe = Object.keys(state.cart).length > 0;
+    retraitsEl.innerHTML =
+      '<div class="titre"><span>À remettre : <span class="num">' + liste.length + '</span></span>' +
+      (liste.length > 1 ? '<button class="voir" data-voir-retraits>' + (retraitsOuverts ? 'Réduire' : 'Voir tout') + '</button>' : '') + '</div>' +
+      vus.map(function(o){
+        var ouvert = retraitDetail === o.id;
+        var detail = '';
+        if(ouvert){
+          var contenu = o.items.map(function(it){ return it.qty + '× ' + escapeHtml(it.name); }).join(', ');
+          var action;
+          if(remise === o.id) action = '<p class="note">Dans le ticket : modifiez-la si besoin, puis encaissez.</p>';
+          else if(occupe || remiseOrder()) action = '<p>Encaissez ou videz d\'abord le ticket en cours.</p><button class="remettre" disabled>Remettre au client</button>';
+          else action = '<button class="remettre" data-remettre="' + o.id + '">Remettre au client</button>';
+          detail = '<div class="retrait-detail"><b>' + escapeHtml(o.customer || 'Sans nom') + '</b><p>' + contenu + ' · <span class="num">' + formatEuro(o.total) + '</span></p>' + action + '</div>';
+        }
+        var when = (o.pickupDate < dayOffsetKey(0) ? shortDate(o.pickupDate) + ' ' : '') + (o.pickupTime || '--:--');
+        return '<button class="retrait' + (o === liste[0] ? ' proche' : '') + '" data-r="' + o.id + '" aria-expanded="' + ouvert + '">' +
+          '<span class="h num">' + when + '</span><span class="c"><b>' + escapeHtml(initiale(o.customer)) + '</b><span>' +
+          (ouvert ? 'Masquer le détail' : 'Toucher pour le détail') + '</span></span>' +
+          '<span class="etat ' + classeEtat(o) + '">' + etiquette(o) + '</span></button>' + detail;
+      }).join('') +
+      '';
+  }
+
+  retraitsEl.addEventListener('click', function(e){
+    if(e.target.closest('[data-voir-retraits]')){ retraitsOuverts = !retraitsOuverts; retraitDetail = null; renderRetraits(); return; }
+    var t = e.target.closest('[data-r]');
+    if(t){
+      clearTimeout(retraitTimer);
+      retraitDetail = retraitDetail === t.dataset.r ? null : t.dataset.r;
+      if(retraitDetail) retraitTimer = setTimeout(function(){ retraitDetail = null; renderRetraits(); }, 10000);
+      renderRetraits(); return;
+    }
+    var p = e.target.closest('[data-pret]');
+    if(p){
+      var op = findPreorder(p.dataset.pret);
+      if(op && (op.status === 'todo' || op.status === 'doing')){
+        if(!op.startedAt) op.startedAt = new Date().toISOString();
+        op.status = 'ready';
+        afterPreordersChanged();
+      }
+      return;
+    }
+    var r = e.target.closest('[data-remettre]');
+    if(r && Object.keys(state.cart).length === 0){
+      remise = r.dataset.remettre; retraitDetail = null; retraitsOuverts = false;
+      renderCart();
+    }
+  });
+
+  // ---------- Barre de vente et « Plus… » ----------
+  // Jamais le chiffre d'affaires en permanence : il est dans « Plus… », derrière
+  // « Afficher », 10 secondes.
+  var plusEl = document.getElementById('plus');
+  var plusBtn = document.getElementById('plus-btn');
+  var plusMontantV = document.getElementById('plus-montant-v');
+  var plusTimer = null, montantTimer = null;
+
+  function heureDe(iso){ return iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : ''; }
+
+  function renderInfosVente(){
+    var n = state.orders.length;
+    var ventes = n.toLocaleString('fr-FR') + ' vente' + (n > 1 ? 's' : '');
+    infosVenteEl.textContent = state.closedAt ? 'Fermée à ' + heureDe(state.closedAt) + ' · ' + ventes
+      : state.openedAt ? 'Ouverte à ' + heureDe(state.openedAt) + ' · ' + ventes
+      : 'Pas encore ouverte' + (n ? ' · ' + ventes : '');
+  }
+
+  function fermerPlus(){
+    plusEl.classList.add('hidden'); plusBtn.setAttribute('aria-expanded', 'false');
+    plusMontantV.textContent = 'Afficher';
+    clearTimeout(plusTimer); clearTimeout(montantTimer);
+  }
+  plusBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(!plusEl.classList.contains('hidden')){ fermerPlus(); return; }
+    plusEl.classList.remove('hidden'); plusBtn.setAttribute('aria-expanded', 'true');
+    clearTimeout(plusTimer); plusTimer = setTimeout(fermerPlus, 15000);
+  });
+  plusEl.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(e.target.closest('#plus-montant')){
+      plusMontantV.textContent = formatEuro(dayRevenue());
+      clearTimeout(montantTimer); montantTimer = setTimeout(function(){ plusMontantV.textContent = 'Afficher'; }, 10000);
+      return;
+    }
+    if(e.target.closest('#plus-commande')){ fermerPlus(); showView('commandes'); return; }
+    var f = e.target.closest('[data-feuille]');
+    if(f){ fermerPlus(); ouvrirFeuille(f.dataset.feuille); }
+  });
+  document.addEventListener('click', function(e){
+    if(!plusEl.classList.contains('hidden') && !e.target.closest('#plus')) fermerPlus();
+  });
+
+  // ---------- Feuilles ----------
+  var feuilleFondEl = document.getElementById('feuille-fond');
+  var sortie = { montant:'', motif:null };
+
+  function ouvrirFeuille(nom){
+    [].forEach.call(feuilleFondEl.querySelectorAll('.feuille'), function(s){ s.classList.toggle('hidden', s.id !== 'feuille-' + nom); });
+    feuilleFondEl.classList.remove('hidden');
+    if(nom === 'ventes'){ pendingDelete = null; renderHistory(); }
+    if(nom === 'sortie'){ sortie = { montant:'', motif:null }; renderSortie(); }
+    if(nom === 'fin-vente'){
+      document.getElementById('fin-vente-texte').textContent = 'Compter s\'ouvre sur « Ce que j\'ai vendu ». Une nouvelle vente rouvre la caisse.' +
+        (Object.keys(state.cart).length ? ' Le ticket en cours sera vidé.' : '');
+    }
+  }
+  function fermerFeuille(){ feuilleFondEl.classList.add('hidden'); }
+  feuilleFondEl.addEventListener('click', function(e){
+    if(e.target === feuilleFondEl || e.target.closest('[data-fermer]')){ fermerFeuille(); return; }
+  });
+
+  function renderSortie(){
+    var v = valeurMontant(sortie.montant);
+    document.getElementById('sortie-v').textContent = (sortie.montant || '0') + ' €';
+    document.getElementById('sortie-touches').innerHTML = touchesHtml(sortie.montant);
+    [].forEach.call(document.querySelectorAll('#sortie-motifs button'), function(b){
+      b.classList.toggle('on', b.dataset.motif === sortie.motif);
+      b.setAttribute('aria-pressed', String(b.dataset.motif === sortie.motif));
+    });
+    document.getElementById('sortie-ok').disabled = !(v > 0 && sortie.motif);
+  }
+  document.getElementById('feuille-sortie').addEventListener('click', function(e){
+    var k = e.target.closest('[data-k]');
+    if(k && !k.disabled){ sortie.montant = tapeMontant(sortie.montant, k.dataset.k); renderSortie(); return; }
+    var m = e.target.closest('[data-motif]');
+    if(m){ sortie.motif = m.dataset.motif; renderSortie(); return; }
+    if(e.target.closest('#sortie-ok')){
+      var v = valeurMontant(sortie.montant);
+      if(!(v > 0) || !sortie.motif) return;
+      // un retrait de caisse, comme dans « La caisse » : il entre dans « devrait être en caisse »
+      cash.movements.unshift({
+        id: 'm' + Date.now(), type: 'retrait', label: sortie.motif, amount: Math.round(v * 100) / 100,
+        time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+      });
+      saveCash();
+      renderMovements(); renderCash(); renderCount();
+      fermerFeuille();
+      showToast('Sortie de ' + formatEuro(v) + ' notée (' + sortie.motif.toLowerCase() + ')');
+    }
+  });
+
+  document.getElementById('fin-vente-ok').addEventListener('click', function(){
+    state.cart = {};
+    remise = null;
+    state.closedAt = new Date().toISOString();
+    saveState();
+    fermerFeuille();
+    renderCart();
+    showView('fin');
+  });
+
+  // ---------- Toast ----------
+  var toastTimer = null;
   function showToast(msg){
     toastEl.textContent = msg;
     toastEl.classList.remove('show');
     void toastEl.offsetWidth; // relance l'animation même si un toast est déjà affiché
     toastEl.classList.add('show');
     if(toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 1100);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
   }
 
-  // ---------- Rendu de monnaie ----------
-  var currentChangeTotal = 0;
-  var currentChangeNumber = null;
-
-  function showChangeOverlay(order){
-    currentChangeTotal = order.total;
-    currentChangeNumber = order.number;
-    changeOrderNumEl.textContent = order.number;
-    changeTotalEl.textContent = formatEuro(order.total);
-    changeReceivedEl.value = '';
-    changeResultEl.textContent = '';
-    changeResultEl.className = 'change-result';
-    changeBackBtn.textContent = order.preorderId ? 'Annuler la remise' : 'Modifier la commande';
-    changeOverlayEl.classList.remove('hidden');
-    setTimeout(function(){ changeReceivedEl.focus(); }, 50);
-  }
-
-  function hideChangeOverlay(){
-    currentChangeNumber = null;
-    changeOverlayEl.classList.add('hidden');
-  }
-
-  function updateChangeResult(){
-    var raw = changeReceivedEl.value.trim();
-    if(!raw){
-      changeResultEl.textContent = '';
-      changeResultEl.className = 'change-result';
-      return;
-    }
-    var v = parseFloat(raw.replace(',', '.'));
-    if(isNaN(v)){
-      changeResultEl.textContent = '';
-      changeResultEl.className = 'change-result';
-      return;
-    }
-    var diff = Math.round((v - currentChangeTotal) * 100) / 100;
-    if(diff < 0){
-      changeResultEl.textContent = 'Il manque ' + formatEuro(Math.abs(diff));
-      changeResultEl.className = 'change-result negative';
-    } else if(diff === 0){
-      changeResultEl.textContent = 'Compte juste';
-      changeResultEl.className = 'change-result zero';
-    } else {
-      changeResultEl.textContent = 'À rendre : ' + formatEuro(diff);
-      changeResultEl.className = 'change-result positive';
-    }
-  }
-
-  changeReceivedEl.addEventListener('input', updateChangeResult);
-  changeReceivedEl.addEventListener('focus', function(){ changeReceivedEl.select(); });
-  changeDoneBtn.addEventListener('click', hideChangeOverlay);
-
-  // « Modifier la commande » : on défait la validation et on repart du panier
-  changeBackBtn.addEventListener('click', function(){
-    var n = currentChangeNumber;
-    hideChangeOverlay();
-    if(n !== null) reopenOrder(n);
-  });
-
-  // ---------- Alerte rupture de stock ----------
-  var pendingAdd = null;
-
-  function showOutOverlay(id, qty, silent){
-    var p = findProduct(id);
-    var left = available(id);
-    if(left < 0) left = 0;
-    pendingAdd = { id:id, qty:qty, silent:silent };
-    var reserved = reservedQty(id);
-    var note = reserved > 0 ? ' ' + reserved + ' sont mis de côté pour des commandes à retirer aujourd\'hui.' : '';
-    if(left === 0){
-      outTitleEl.textContent = 'Épuisé';
-      outMsgEl.textContent = 'Il n\'y a plus de ' + p.name + '. Prévenez le client.' + note;
-    } else {
-      outTitleEl.textContent = 'Stock insuffisant';
-      outMsgEl.textContent = 'Il ne reste que ' + left + ' ' + p.name + ' en stock.' + note;
-    }
-    outOverlayEl.classList.remove('hidden');
-  }
-
-  function hideOutOverlay(){
-    pendingAdd = null;
-    outOverlayEl.classList.add('hidden');
-  }
-
-  outCancelBtn.addEventListener('click', hideOutOverlay);
-
-  // Le stock n'est qu'un repère : la vente reste possible si la quantité réelle était plus élevée.
-  outForceBtn.addEventListener('click', function(){
-    if(pendingAdd) addToCart(pendingAdd.id, pendingAdd.qty, pendingAdd.silent);
-    hideOutOverlay();
-  });
-
-  // ---------- Onglets ----------
-  // La caisse reste au premier niveau pour rester rapide pendant la vente.
-  // Tout ce qui se fait avant ou après la vente vit sous l'onglet « Gestion ».
-  var GESTION_VIEWS = ['produits', 'stock', 'achats', 'argent'];
-
-  var views = {
-    caisse:   document.getElementById('view-caisse'),
-    commandes:document.getElementById('view-commandes'),
-    produits: document.getElementById('view-produits'),
-    stock:    document.getElementById('view-stock'),
-    achats:   document.getElementById('view-achats'),
-    argent:   document.getElementById('view-argent'),
-    fin:      document.getElementById('view-fin')
+  // ---------- Préparer · Vendre · Compter ----------
+  // Trois moments, chacun avec ses étapes. Carnet et Atelier sont à part.
+  var MOMENTS = {
+    preparer: ['point', 'commandes', 'stock', 'achats', 'argent', 'ouvrir'],
+    vendre:   ['caisse'],
+    compter:  ['fin', 'reste', 'conso', 'compte', 'gain', 'cloture']
   };
-  var tabCaisse  = document.getElementById('tab-caisse');
-  var tabCommandes = document.getElementById('tab-commandes');
-  var tabGestion = document.getElementById('tab-gestion');
-  var tabFin     = document.getElementById('tab-fin');
-  var subnavEl   = document.getElementById('subnav');
+  // version simple : quatre onglets. Les autres écrans restent dans le code, masqués.
+  var ONGLETS = { caisse:'caisse', produits:'produits', stockargent:'stockargent', commandes:'commandes' };
+  var VIEW_NAMES = ['caisse', 'point', 'commandes', 'stock', 'achats', 'argent', 'ouvrir', 'fin', 'reste', 'conso', 'compte', 'gain', 'cloture', 'carnet', 'produits', 'stockargent'];
+  var views = {};
+  VIEW_NAMES.forEach(function(n){ views[n] = document.getElementById('view-' + n); });
 
-  var lastGestionView = 'produits';
-  var currentView = 'caisse';
+  var currentView = 'caisse', currentMoment = 'vendre';
+  var lastStep = { preparer:'point', compter:'fin' };
+
+  function momentOf(name){
+    if(name === 'produits' || name === 'stockargent' || name === 'commandes') return 'gestion';
+    for(var m in MOMENTS) if(MOMENTS[m].indexOf(name) !== -1) return m;
+    return currentMoment === 'vendre' ? 'preparer' : currentMoment; // Carnet, Atelier
+  }
 
   function showView(name){
     if(!views[name]) return;
-    currentView = name;
-    var inGestion = GESTION_VIEWS.indexOf(name) !== -1;
-    if(inGestion) lastGestionView = name;
+    var moment = momentOf(name);
+    currentView = name; currentMoment = moment;
+    if(MOMENTS[moment] && MOMENTS[moment].indexOf(name) !== -1 && moment !== 'vendre') lastStep[moment] = name;
 
-    Object.keys(views).forEach(function(k){
-      views[k].classList.toggle('hidden', k !== name);
+    VIEW_NAMES.forEach(function(k){ views[k].classList.toggle('hidden', k !== name); });
+    document.body.className = 'm-' + moment;
+    [].forEach.call(document.querySelectorAll('.moments [data-tab]'), function(b){
+      var on = b.dataset.tab === name;
+      b.classList.toggle('on', on);
+      if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    tabCaisse.classList.toggle('active', name === 'caisse');
-    tabCommandes.classList.toggle('active', name === 'commandes');
-    tabGestion.classList.toggle('active', inGestion);
-    tabFin.classList.toggle('active', name === 'fin');
-    subnavEl.classList.toggle('hidden', !inGestion);
-    subnavEl.querySelectorAll('.subtab-btn').forEach(function(btn){
-      btn.classList.toggle('active', btn.dataset.view === name);
+    document.getElementById('etapes-preparer').classList.toggle('hidden', moment !== 'preparer');
+    document.getElementById('etapes-compter').classList.toggle('hidden', moment !== 'compter');
+    [].forEach.call(document.querySelectorAll('[data-goto]'), function(b){
+      var on = b.dataset.goto === name && !b.classList.contains('suivant');
+      b.classList.toggle('ici', on);
+      if(on) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
     });
+    var vente = moment === 'vendre';
+    infosVenteEl.classList.toggle('hidden', !vente);
+    plusBtn.classList.toggle('hidden', !vente);
+
+    fermerPlus(); fermerFeuille();
+    if(!vente){ fermerPave(); }
 
     hideResetConfirm();
+    if(name === 'caisse'){ renderCart(); renderInfosVente(); }
+    if(name === 'point') renderPoint();
     if(name === 'commandes'){ pendingPreCancel = null; renderPreorders(); renderPreForm(); }
     if(name === 'produits') renderManageProducts();
-    if(name === 'stock'){ setStockStatus('', ''); renderStock(); renderSupplies(); renderCapacity(); }
+    if(name === 'stock'){ setStockStatus('', ''); renderCapacity(); renderStock(); renderSupplies(); }
     if(name === 'achats'){ setPurchaseStatus('', ''); renderBuySupplyOptions(); renderPurchases(); }
-    if(name === 'argent'){ setCashStatus('', ''); setMoveStatus('', ''); renderCash(); renderMovements(); renderMargins(); }
-    if(name === 'fin'){ renderBilan(); renderUsageForm(); renderCount(); }
+    if(name === 'argent'){ setCashStatus('', ''); setMoveStatus('', ''); renderCash(); renderMovements(); }
+    if(name === 'ouvrir') renderOuvrir();
+    if(name === 'fin') renderSummary();
+    if(name === 'reste') renderRestes();
+    if(name === 'conso') renderUsageForm();
+    if(name === 'compte') renderCount();
+    if(name === 'gain'){ renderSummary(); renderBilan(); renderMargins(); }
+    if(name === 'cloture') renderBackupPending();
+    if(name === 'carnet') renderArchive();
+    if(name === 'stockargent'){ setStockStatus('', ''); setCashStatus('', ''); setMoveStatus('', ''); renderStock(); renderCash(); renderMovements(); renderCount(); renderBackupPending(); }
     renderAlerts();
   }
 
-  tabCaisse.addEventListener('click', function(){ showView('caisse'); });
-  tabCommandes.addEventListener('click', function(){ showView('commandes'); });
-  tabGestion.addEventListener('click', function(){ showView(lastGestionView); });
-  tabFin.addEventListener('click', function(){ showView('fin'); });
-
-  subnavEl.addEventListener('click', function(e){
-    var btn = e.target.closest('.subtab-btn');
-    if(btn) showView(btn.dataset.view);
+  document.querySelector('.moments').addEventListener('click', function(e){
+    var t = e.target.closest('[data-tab]');
+    if(t){ showView(ONGLETS[t.dataset.tab]); return; }
+    var b = e.target.closest('[data-moment]'); if(!b) return;
+    var m = b.dataset.moment;
+    // Compter, depuis un autre moment, s'ouvre toujours sur « Ce que j'ai vendu » :
+    // jamais le gain d'emblée, des clients peuvent être devant l'écran.
+    if(m === 'compter' && currentMoment !== 'compter'){ showView('fin'); return; }
+    showView(m === 'vendre' ? 'caisse' : lastStep[m]);
+  });
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-goto]'); if(b) showView(b.dataset.goto);
   });
 
   // ---------- Gestion des produits ----------
@@ -2016,8 +2352,28 @@
     return n.toFixed(2).replace('.', ',');
   }
 
+  // Options d'une liste de catégories ; « Sans catégorie » en dernier.
+  function categoryOptions(selected){
+    return CATEGORIES.map(function(c){
+      return '<option value="' + escapeAttr(c.id) + '"' + (c.id === selected ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>';
+    }).join('') + '<option value=""' + (selected === '' ? ' selected' : '') + '>' + SANS_CATEGORIE + '</option>';
+  }
+
+  // Produits rangés par catégorie, dans l'ordre des catégories.
   function renderManageProducts(){
-    manageListEl.innerHTML = PRODUCTS.map(function(p){
+    renderCategoriesAdmin();
+    var addCat = document.getElementById('add-cat');
+    var keep = addCat.value;
+    addCat.innerHTML = categoryOptions(findCategory(keep) ? keep : (CATEGORIES.length ? CATEGORIES[0].id : ''));
+    var groupes = CATEGORIES.map(function(c){ return c.id; }).concat(['']);
+    manageListEl.innerHTML = groupes.map(function(gid){
+      var liste = productsIn(gid);
+      if(!liste.length) return '';
+      return '<h3 class="groupe-cat">' + escapeHtml(categoryName(gid)) + ' · ' + liste.length + '</h3>' + liste.map(manageRow).join('');
+    }).join('') || '<p class="empty-hint">Aucun produit. Ajoutez-en un ci-dessous.</p>';
+  }
+
+  function manageRow(p){
       var actions;
       if(pendingProductDelete === p.id){
         actions = '<span class="confirm-text">Supprimer ?</span>' +
@@ -2027,12 +2383,24 @@
         actions = '<button class="mini-btn" data-maction="del" data-id="'+p.id+'">✕</button>';
       }
       return '<div class="manage-row">' +
-        '<input class="m-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" data-id="'+p.id+'" value="'+p.name.replace(/"/g,'&quot;')+'">' +
-        '<input class="m-price" type="text" inputmode="decimal" autocomplete="off" data-id="'+p.id+'" value="'+priceToText(p.price)+'">' +
+        '<input class="m-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" aria-label="Nom complet" data-id="'+p.id+'" value="'+p.name.replace(/"/g,'&quot;')+'">' +
+        '<input class="m-price" type="text" inputmode="decimal" autocomplete="off" aria-label="Prix" data-id="'+p.id+'" value="'+priceToText(p.price)+'">' +
         '<span class="manage-euro">€</span>' +
+        '<select class="m-cat" aria-label="Catégorie" data-id="'+p.id+'">' + categoryOptions(productCategory(p)) + '</select>' +
         actions +
+        '<input class="m-short" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" maxlength="30" aria-label="Nom court pour la caisse" placeholder="Nom court pour la caisse (facultatif)" data-id="'+p.id+'" value="'+escapeAttr(p.short)+'">' +
+        '<span class="m-apercu" data-apercu="'+p.id+'">Sur la tuile : <b>'+escapeHtml(tileName(p))+'</b></span>' +
+        coutCarte(p) +
       '</div>';
-    }).join('');
+  }
+
+  // Coût et marge d'un produit, à côté de son prix. Estimé : « ≈ ». Inconnu : gris calme.
+  function coutCarte(p){
+    var st = productCostStatus(p.id);
+    if(!st.known) return '<span class="m-cout"><span class="inconnu">Coût inconnu</span> — ' + escapeHtml(st.reason) + '</span>';
+    var cost = productCost(p.id), est = costIsLearning(p.id) ? ' estime' : '';
+    var marge = p.price - cost, pct = p.price > 0 ? Math.round(marge / p.price * 100) : 0;
+    return '<span class="m-cout">Coûte <b class="' + est + '">' + formatEuro(cost) + '</b> · marge <b class="marge' + est + '">' + formatEuro(marge) + '</b> (' + pct + ' %)</span>';
   }
 
   function afterProductsChanged(){
@@ -2058,6 +2426,18 @@
         e.target.value = p.name;
         setManageStatus('Le nom ne peut pas être vide.', 'err');
       }
+    } else if(e.target.matches('select.m-cat')){
+      p.category = findCategory(e.target.value) ? e.target.value : '';
+      afterProductsChanged();
+      renderManageProducts();
+      setManageStatus('« ' + p.name + ' » rangé dans « ' + categoryName(p.category) + ' ».', 'ok');
+    } else if(e.target.matches('input.m-short')){
+      p.short = e.target.value.trim().slice(0, 30);
+      e.target.value = p.short;
+      var apercu = manageListEl.querySelector('[data-apercu="' + p.id + '"] b');
+      if(apercu) apercu.textContent = tileName(p);
+      afterProductsChanged();
+      setManageStatus(p.short ? 'Nom court enregistré : la tuile affiche « ' + p.short + ' ».' : 'Nom court effacé : la tuile affiche le nom complet.', 'ok');
     } else if(e.target.matches('input.m-price')){
       var price = parsePrice(e.target.value);
       if(price !== null){
@@ -2070,6 +2450,12 @@
         setManageStatus('Prix invalide — exemple : 1,20', 'err');
       }
     }
+  });
+
+  manageListEl.addEventListener('input', function(e){
+    if(!e.target.matches('input.m-short')) return;
+    var p = findProduct(e.target.dataset.id), ap = manageListEl.querySelector('[data-apercu="' + e.target.dataset.id + '"] b');
+    if(p && ap) ap.textContent = e.target.value.trim() || p.name;
   });
 
   manageListEl.addEventListener('focusin', function(e){
@@ -2109,12 +2495,97 @@
       setManageStatus('Indiquez un prix valide — exemple : 1,20', 'err');
       return;
     }
-    PRODUCTS.push(normalizeProduct({ id:'p'+Date.now(), name:name, price:price }));
+    var catId = findCategory(document.getElementById('add-cat').value) ? document.getElementById('add-cat').value : '';
+    PRODUCTS.push(normalizeProduct({ id:'p'+Date.now(), name:name, price:price, category:catId }));
     addNameEl.value = '';
     addPriceEl.value = '';
     afterProductsChanged();
     renderManageProducts();
-    setManageStatus('« '+name+' » ajouté à la carte (quantité illimitée — à régler dans l\'onglet Stock).', 'ok');
+    setManageStatus('« '+name+' » ajouté dans « ' + categoryName(catId) + ' » (quantité illimitée — à régler dans Stock et argent).', 'ok');
+  });
+
+  // ---------- Catégories : l'écran ----------
+  var catListEl = document.getElementById('cat-list');
+  var catNameEl = document.getElementById('cat-name');
+  var catStatusEl = document.getElementById('cat-status');
+  var pendingCatDelete = null;
+
+  function setCatStatus(msg, kind){ catStatusEl.textContent = msg; catStatusEl.className = 'g-status' + (kind ? ' ' + kind : ''); }
+
+  function nameTaken(name, exceptId){
+    var n = name.trim().toLowerCase();
+    return n === SANS_CATEGORIE.toLowerCase() || CATEGORIES.some(function(c){ return c.id !== exceptId && c.name.toLowerCase() === n; });
+  }
+
+  function renderCategoriesAdmin(){
+    if(!CATEGORIES.length){
+      catListEl.innerHTML = '<p class="empty-hint">Aucune catégorie pour l\'instant. Créez la première ci-dessous (par exemple Plats, Boissons).</p>';
+      return;
+    }
+    catListEl.innerHTML = CATEGORIES.map(function(c){
+      var n = productsIn(c.id).length;
+      var actions = pendingCatDelete === c.id
+        ? '<span class="confirm-text">Supprimer ?</span>' +
+          '<button class="mini-btn confirm-yes" data-caction="del-yes" data-id="' + escapeAttr(c.id) + '">Oui</button>' +
+          '<button class="mini-btn confirm-no" data-caction="del-no" data-id="' + escapeAttr(c.id) + '">Non</button>'
+        : '<button class="mini-btn" data-caction="del" data-id="' + escapeAttr(c.id) + '" aria-label="Supprimer la catégorie ' + escapeAttr(c.name) + '">✕</button>';
+      return '<div class="cat-row">' +
+        '<input class="c-name" type="text" autocapitalize="sentences" autocorrect="off" autocomplete="off" maxlength="30" aria-label="Nom de la catégorie" data-id="' + escapeAttr(c.id) + '" value="' + escapeAttr(c.name) + '">' +
+        '<span class="cat-compte">' + n + ' produit' + (n > 1 ? 's' : '') + '</span>' + actions + '</div>';
+    }).join('');
+  }
+
+  function afterCategoriesChanged(){
+    saveCategories();
+    renderManageProducts();
+    renderProducts();
+  }
+
+  document.getElementById('cat-add-btn').addEventListener('click', function(){
+    var name = catNameEl.value.trim().slice(0, 30);
+    if(!name){ setCatStatus('Indiquez le nom de la catégorie — exemple : Boissons', 'err'); return; }
+    if(nameTaken(name)){ setCatStatus('« ' + name + ' » existe déjà.', 'err'); return; }
+    CATEGORIES.push({ id:'c' + Date.now(), name:name });
+    catNameEl.value = '';
+    afterCategoriesChanged();
+    setCatStatus('Catégorie « ' + name + ' » créée.', 'ok');
+  });
+
+  catListEl.addEventListener('change', function(e){
+    if(!e.target.matches('input.c-name')) return;
+    var c = findCategory(e.target.dataset.id); if(!c) return;
+    var name = e.target.value.trim().slice(0, 30);
+    if(!name){ e.target.value = c.name; setCatStatus('Le nom ne peut pas être vide.', 'err'); return; }
+    if(nameTaken(name, c.id)){ e.target.value = c.name; setCatStatus('« ' + name + ' » existe déjà.', 'err'); return; }
+    var avant = c.name;
+    c.name = name;
+    afterCategoriesChanged();
+    setCatStatus('« ' + avant + ' » renommée en « ' + name + ' ».', 'ok');
+  });
+
+  catListEl.addEventListener('click', function(e){
+    var b = e.target.closest('[data-caction]'); if(!b) return;
+    var c = findCategory(b.dataset.id); if(!c) return;
+    var action = b.dataset.caction;
+    if(action === 'del'){
+      // une catégorie qui contient encore des produits ne se supprime pas
+      var n = productsIn(c.id).length;
+      if(n){
+        pendingCatDelete = null;
+        renderCategoriesAdmin();
+        setCatStatus(n + ' produit' + (n > 1 ? 's sont' : ' est') + ' encore dans « ' + c.name + ' » : rangez-' + (n > 1 ? 'les' : 'le') + ' ailleurs d\'abord.', 'err');
+        return;
+      }
+      pendingCatDelete = c.id; renderCategoriesAdmin(); return;
+    }
+    if(action === 'del-no'){ pendingCatDelete = null; renderCategoriesAdmin(); return; }
+    if(action === 'del-yes'){
+      if(productsIn(c.id).length){ pendingCatDelete = null; renderCategoriesAdmin(); return; }
+      CATEGORIES = CATEGORIES.filter(function(x){ return x.id !== c.id; });
+      pendingCatDelete = null;
+      afterCategoriesChanged();
+      setCatStatus('Catégorie « ' + c.name + ' » supprimée.', 'ok');
+    }
   });
 
   // ---------- Onglet Stock ----------
@@ -2188,6 +2659,7 @@
       return;
     }
     p.stock = v;
+    if(v > 0) p.stockRef = v;
     e.target.value = v;
     e.target.classList.toggle('empty', v <= 0);
     afterStockChanged();
@@ -2371,7 +2843,8 @@
       depensesTotal: depensesCaisse + depensesPerso,
       retraits: retraits,
       apports: apports,
-      expected: cash.opening + revenue + apports - depensesCaisse - retraits
+      // version simple : les achats ne sont plus suivis, l'argent qu'ils sortent n'est pas compté
+      expected: cash.opening + revenue + apports - retraits
     };
   }
 
@@ -2402,6 +2875,15 @@
       return { known:false, reason:'consommation pas encore connue : ' + unlearned.map(function(s){ return s.name; }).join(', ') };
     }
     return { known:true, reason:'' };
+  }
+
+  // Coût connu mais encore en apprentissage (moins de 5 journées comptées) :
+  // affiché avec « ≈ ». Une consommation saisie à la main (samples 0) est sûre.
+  function costIsLearning(productId){
+    return SUPPLIES.some(function(s){
+      var r = ratioFor(s.id, productId);
+      return isLinked(s.id, productId) && r && r.per > 0 && r.samples > 0 && r.samples < 5;
+    });
   }
 
   function productCostKnown(productId){
@@ -2463,7 +2945,7 @@
     var low = SUPPLIES.filter(function(s){
       return s.alertAt > 0 && s.qty <= s.alertAt;
     });
-    if(low.length === 0){
+    if(low.length === 0 || currentView === 'caisse'){
       alertBarEl.classList.add('hidden');
       alertBarEl.textContent = '';
       return;
@@ -2512,7 +2994,15 @@
       suppliesListEl.innerHTML = '<p class="empty-hint">Aucune matière ni consommable enregistré. Ajoutez-en un ci-dessous.</p>';
       return;
     }
-    suppliesListEl.innerHTML = SUPPLIES.map(function(s){
+    // deux niveaux séparés par l'espace : les matières, puis les consommables
+    var groupes = [['matiere', 'Matières premières'], ['conso', 'Consommables']].map(function(g){
+      var liste = SUPPLIES.filter(function(s){ return (s.kind === 'conso' ? 'conso' : 'matiere') === g[0]; });
+      return liste.length ? '<h3 class="sous-titre">' + g[1] + '</h3>' + liste.map(supplyRow).join('') : '';
+    });
+    suppliesListEl.innerHTML = groupes.join('');
+  }
+
+  function supplyRow(s){
       var actions;
       if(pendingSupplyDelete === s.id){
         actions = '<span class="confirm-text">Supprimer ?</span>' +
@@ -2562,7 +3052,6 @@
         costLine(s) +
         detail +
       '</div>';
-    }).join('');
   }
 
   // Ligne de coût d'une matière : le coût moyen s'il est fiable, sinon de quoi
@@ -2951,8 +3440,8 @@
     var c = cashSummary();
     cashKpisEl.innerHTML =
       kpi('Encaissé aujourd\'hui', formatEuro(c.revenue), 'good') +
-      kpi('Sorti de la caisse', formatEuro(c.depensesCaisse + c.retraits), 'bad') +
-      kpi('Payé de ma poche', formatEuro(c.depensesPerso)) +
+      kpi('Sorti de la caisse', formatEuro(c.retraits), 'bad') +
+      kpi('Apporté', formatEuro(c.apports)) +
       kpi('Devrait être en caisse', formatEuro(c.expected), 'strong');
   }
 
@@ -3038,15 +3527,15 @@
     marginListEl.innerHTML = PRODUCTS.map(function(p){
       var st = productCostStatus(p.id);
       if(!st.known){
-        return '<div class="money-line"><span class="money-label">'+p.name+'<br><span class="money-time">coût inconnu — '+st.reason+'</span></span>' +
+        return '<div class="money-line"><span class="money-label">'+p.name+'<br><span class="money-time"><span class="inconnu">coût inconnu</span> — '+st.reason+'</span></span>' +
           '<span class="money-amount">'+formatEuro(p.price)+'</span></div>';
       }
       var cost = productCost(p.id);
       var margin = p.price - cost;
       var pct = p.price > 0 ? Math.round((margin / p.price) * 100) : 0;
       return '<div class="money-line">' +
-        '<span class="money-label">'+p.name+'<br><span class="money-time">vendu '+formatEuro(p.price)+' · coûte '+formatEuro(cost)+'</span></span>' +
-        '<span class="money-amount '+(margin >= 0 ? 'in' : 'out')+'">'+formatEuro(margin)+' ('+pct+'%)</span>' +
+        '<span class="money-label">'+escapeHtml(p.name)+'<br><span class="money-time">vendu '+formatEuro(p.price)+' · coûte <span class="'+(costIsLearning(p.id) ? 'estime' : '')+'">'+formatEuro(cost)+'</span></span></span>' +
+        '<span class="money-amount '+(margin >= 0 ? 'in' : 'out')+'"><span class="'+(costIsLearning(p.id) ? 'estime' : '')+'">'+formatEuro(margin)+'</span> ('+pct+'%)</span>' +
       '</div>';
     }).join('');
   }
@@ -3088,11 +3577,16 @@
       marginText = formatEuro(d.margin) + ' (' + pct + '%)';
       if(d.coverage < 0.995) marginLabel += ' · sur ' + Math.round(d.coverage * 100) + ' % des ventes';
     }
+    var appris = Object.keys(soldQtyById()).some(function(id){ return costIsLearning(id); });
+    var habille = function(t){
+      if(t === 'inconnu' || t === 'coût inconnu') return '<span class="inconnu">' + t + '</span>';
+      return appris && t !== '—' ? '<span class="estime">' + t + '</span>' : t;
+    };
     bilanKpisEl.innerHTML =
       kpi('Chiffre d\'affaires', formatEuro(d.revenue), 'good') +
-      kpi('Coût des matières', costText, 'bad') +
+      kpi('Coût des matières', habille(costText), '') +
       kpi('Dépenses du jour', formatEuro(c.depensesTotal), 'bad') +
-      kpi(marginLabel, marginText, 'strong');
+      kpi(marginLabel, habille(marginText), 'strong');
     var reasons = d.revenue > 0 ? unknownCostReasons() : [];
     bilanHintEl.textContent = reasons.length ? 'Coût inconnu, donc hors de la marge : ' + reasons.join(' · ') + '.' : '';
     bilanHintEl.classList.toggle('hidden', reasons.length === 0);
@@ -3264,7 +3758,10 @@
   // Après une vente, les écrans de gestion ouverts doivent suivre.
   function refreshGestion(){
     if(currentView === 'argent'){ renderCash(); renderMovements(); }
-    if(currentView === 'fin'){ renderBilan(); renderUsageForm(); renderCount(); }
+    if(currentView === 'gain'){ renderBilan(); renderMargins(); }
+    if(currentView === 'conso') renderUsageForm();
+    if(currentView === 'compte') renderCount();
+    if(currentView === 'stockargent'){ renderCash(); renderMovements(); renderCount(); renderStock(); }
     if(currentView === 'stock') renderCapacity();
     if(currentView === 'commandes') renderPreorders();
   }
@@ -3430,9 +3927,13 @@
   var NEXT_STEP_LABELS = { todo:'Commencer', doing:'Marquer prête', ready:'Remettre au client' };
   var BACK_STEP_LABELS = { doing:'Pas encore commencée', ready:'Pas encore prête' };
 
+  // version simple : une commande est « à remettre » tant qu'elle n'est pas encaissée
+  function etiquette(o){ return o.status === 'done' ? 'Remise' : (o.status === 'cancelled' ? 'Annulée' : 'À remettre'); }
+  function classeEtat(o){ return o.status === 'done' ? 'done' : (o.status === 'cancelled' ? 'cancelled' : 'doing'); }
+
   function preorderCard(o, withDate){
     var detail = o.items.map(function(it){ return it.qty + '× ' + escapeHtml(it.name); }).join(', ');
-    var sub = detail + (o.phone ? ' · ' + escapeHtml(o.phone) : '');
+    var sub = detail; // le téléphone (masqué) ne s'affiche plus
     var actions = '';
     if(o.status === 'done'){
       sub += ' · remise' + (o.orderNumber ? ' (commande #' + o.orderNumber + ')' : '');
@@ -3441,18 +3942,15 @@
         '<button class="mini-btn confirm-yes" data-pre-action="cancel-yes" data-id="'+o.id+'">Oui</button>' +
         '<button class="mini-btn confirm-no" data-pre-action="cancel-no" data-id="'+o.id+'">Non</button>';
     } else {
-      actions = '<button class="g-btn'+(o.status === 'ready' ? ' danger' : '')+'" data-pre-action="next" data-id="'+o.id+'">'+NEXT_STEP_LABELS[o.status]+'</button>';
-      if(BACK_STEP_LABELS[o.status]){
-        actions += '<button class="mini-btn edit" data-pre-action="back" data-id="'+o.id+'">'+BACK_STEP_LABELS[o.status]+'</button>';
-      }
-      actions += '<button class="mini-btn edit" data-pre-action="edit" data-id="'+o.id+'">Modifier</button>' +
+      actions = '<button class="g-btn danger" data-pre-action="next" data-id="'+o.id+'">Remettre et encaisser</button>' +
+        '<button class="mini-btn edit" data-pre-action="edit" data-id="'+o.id+'">Modifier</button>' +
         '<button class="mini-btn" data-pre-action="cancel" data-id="'+o.id+'">✕</button>';
     }
     var when = (withDate ? shortDate(o.pickupDate) + ' ' : '') + (o.pickupTime || '--:--');
     return '<div class="g-row pre-card '+o.status+'" data-pre-row="'+o.id+'">' +
       '<span class="pre-time">'+when+'</span>' +
       '<span class="g-row-name">'+(o.customer ? escapeHtml(o.customer) : 'Sans nom')+'</span>' +
-      '<span class="g-tag pre-tag '+o.status+'">'+PREORDER_LABELS[o.status]+'</span>' +
+      '<span class="g-tag pre-tag '+classeEtat(o)+'">'+etiquette(o)+'</span>' +
       '<span class="money-amount">'+formatEuro(o.total)+'</span>' +
       '<span class="g-row-sub">'+sub+'</span>' +
       (actions ? '<span class="pre-actions">'+actions+'</span>' : '') +
@@ -3495,7 +3993,7 @@
     // ce qu'il reste à produire pour ce jour (commandes pas encore prêtes)
     var qtyById = {}, nameById = {};
     day.forEach(function(o){
-      if(o.status !== 'todo' && o.status !== 'doing') return;
+      if(!isActivePreorder(o)) return;
       o.items.forEach(function(it){
         qtyById[it.id] = (qtyById[it.id] || 0) + it.qty;
         nameById[it.id] = it.name;
@@ -3546,6 +4044,7 @@
       preorderId: o.id,
       customer: o.customer
     };
+    noteSaleTime();
     items.forEach(function(it){
       var p = findProduct(it.id);
       if(p && p.tracked) p.stock -= it.qty;
@@ -3563,8 +4062,8 @@
     renderStock();
     refreshGestion();
     renderPreorders();
-    showChangeOverlay(order);
     maybeAutoBackup();
+    return order;
   }
 
   // Une vente issue d'une commande est supprimée ou annulée depuis la caisse :
@@ -3579,10 +4078,11 @@
     renderPreorders();
   }
 
-  function cancelPreorderSale(order){
-    return inBatch(function(){ return cancelPreorderSaleNow(order); });
+  // depuisVente : annulée depuis le bandeau de Vendre, on reste sur la caisse
+  function cancelPreorderSale(order, depuisVente){
+    return inBatch(function(){ return cancelPreorderSaleNow(order, depuisVente); });
   }
-  function cancelPreorderSaleNow(order){
+  function cancelPreorderSaleNow(order, depuisVente){
     deleteOrder(order.number);
     if(state.nextOrderNumber === order.number + 1){
       state.nextOrderNumber = order.number;
@@ -3591,7 +4091,7 @@
     pendingDelete = null;
     renderAll();
     renderStock();
-    showView('commandes');
+    if(!depuisVente) showView('commandes');
     showToast('Remise annulée : la commande est de nouveau prête');
     // la sauvegarde automatique doit repartir : le fichier du jour contient encore cette vente
     try { localStorage.removeItem(LAST_AUTO_BACKUP_KEY); } catch(e){}
@@ -3604,6 +4104,12 @@
     if(!o) return;
     var action = btn.dataset.preAction;
 
+    if(action === 'next' && isActivePreorder(o)){
+      if(Object.keys(state.cart).length){ setPreStatus('Encaissez ou videz d\'abord le ticket en cours dans la caisse, puis remettez la commande.', 'err'); return; }
+      remise = o.id;
+      showView('caisse');
+      return;
+    }
     if(action === 'next'){
       if(o.status === 'todo'){
         o.status = 'doing';
@@ -3611,7 +4117,9 @@
       } else if(o.status === 'doing'){
         o.status = 'ready';
       } else if(o.status === 'ready'){
-        deliverPreorder(o);
+        if(Object.keys(state.cart).length){ setPreStatus('Encaissez ou videz d\'abord le ticket en cours dans Vendre, puis remettez la commande.', 'err'); return; }
+        remise = o.id;
+        showView('caisse');
         return;
       }
       afterPreordersChanged();
@@ -4014,6 +4522,7 @@
   function buildDataSnapshot(){
     var data = {};
     data[PRODUCTS_KEY] = PRODUCTS;
+    data[CATEGORIES_KEY] = CATEGORIES;
     data[STORAGE_KEY] = state;
     data[SUPPLIES_KEY] = SUPPLIES;
     data[RATIOS_KEY] = RATIOS;
@@ -4142,6 +4651,7 @@
 
   function renderBackupPending(){
     if(!backupPendingEl) return;
+    if(currentView === 'point') renderPoint();
     if(!backupState.pending){
       backupPendingEl.classList.add('hidden');
       backupPendingEl.textContent = '';
@@ -4162,7 +4672,7 @@
   var restoreSummaryEl  = document.getElementById('restore-summary');
   var restoreYesBtn     = document.getElementById('restore-yes');
   var restoreNoBtn      = document.getElementById('restore-no');
-  var RESTORABLE_KEYS   = [PRODUCTS_KEY, STORAGE_KEY, SUPPLIES_KEY, RATIOS_KEY, CASH_KEY, ARCHIVE_KEY, PREORDERS_KEY];
+  var RESTORABLE_KEYS   = [PRODUCTS_KEY, CATEGORIES_KEY, STORAGE_KEY, SUPPLIES_KEY, RATIOS_KEY, CASH_KEY, ARCHIVE_KEY, PREORDERS_KEY];
   var pendingRestore    = null;
 
   function isValidSnapshot(s){
@@ -4261,6 +4771,17 @@
     setBackupStatus('Réglages enregistrés.', 'ok');
   });
 
+  // Choix à deux boutons (Aujourd'hui / Demain…) : le bouton choisi est annoncé
+  // « pressé », pour le lecteur d'écran comme pour l'audit au toucher.
+  function syncSegments(){
+    [].forEach.call(document.querySelectorAll('.seg-btn'), function(b){
+      var on = b.classList.contains('on');
+      if(b.getAttribute('aria-pressed') !== String(on)) b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  syncSegments();
+  new MutationObserver(syncSegments).observe(document.getElementById('app'), { attributes:true, attributeFilter:['class'], subtree:true });
+
   // Nécessaire pour que :active se déclenche de façon fiable sur iOS Safari
   document.addEventListener('touchstart', function(){}, false);
 
@@ -4288,6 +4809,7 @@
     setTimeout(function(){ githubBackup({ silent:true }); }, 3000);
   }
   if(cash.counted !== null && countRealEl) countRealEl.value = numToText(cash.counted);
+  showView('caisse');
 
   // ---------- Mise en cache hors-ligne ----------
   if('serviceWorker' in navigator){
