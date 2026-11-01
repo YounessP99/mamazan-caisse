@@ -493,6 +493,14 @@
   .ligne .n{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ligne .st{ font-weight:800; }
   .ligne.fixe{ cursor:default; }
+  /* appui long en cours : la tuile ou la ligne s'enfonce, le pavé va s'ouvrir */
+  .product-btn.appui, .ligne.appui{ transform:scale(.96); box-shadow:0 0 0 4px var(--croute-soft); transition:transform 220ms var(--ease), box-shadow 220ms var(--ease); }
+  #pave .qte-titre{ font-size:16px; font-weight:800; color:var(--tamarin-2); }
+  #pave .qte-info{ min-height:24px; font-size:15px; font-weight:700; color:var(--tamarin-2); }
+  #pave .qte-info.trop{ color:var(--piment); }
+  #pave-qte-ok.trop{ background:var(--piment-soft); color:var(--piment); box-shadow:none; }
+  #pave-qte-ok{ background:var(--tamarin); color:var(--blanc); box-shadow:none; }
+  #pave-qte-ok:disabled{ background:var(--farine-2); color:var(--tamarin-3); }
   .retrait-detail .note{ color:var(--tamarin-2); }
   .ligne.neuve{ animation:neuve 220ms var(--ease); }
   @keyframes neuve{ from{ background:var(--curcuma-soft); } to{ background:transparent; } }
@@ -1349,7 +1357,7 @@
           '<span class="st num">' + formatEuro(it.price * it.qty) + '</span></button>';
       }).join('');
     } else if(ids.length === 0){
-      cartLinesEl.innerHTML = '<p class="empty-hint">Touchez un produit. Touchez une ligne pour en retirer un.</p>';
+      cartLinesEl.innerHTML = '<p class="empty-hint">Touchez un produit pour en ajouter un. Gardez le doigt appuyé pour saisir une quantité. Touchez une ligne pour en retirer un.</p>';
     } else {
       cartLinesEl.innerHTML = ids.map(function(id){
         var p = findProduct(id);
@@ -1916,6 +1924,7 @@
 
   // ---------- Ecouteurs ----------
   productsEl.addEventListener('click', function(e){
+    if(Date.now() < clicsIgnoresJusqua) return; // le relâcher d'un appui long n'ajoute rien
     var f = e.target.closest('[data-forcer]');
     if(f){
       // le doigt qui rebondit ou le double toucher accidentel ne vendent jamais un épuisé
@@ -1929,6 +1938,7 @@
   });
 
   cartLinesEl.addEventListener('click', function(e){
+    if(Date.now() < clicsIgnoresJusqua) return;
     var btn = e.target.closest('button[data-action="minus1"]');
     if(!btn) return;
     if(remiseOrder()) modifierRemise(btn.dataset.id, -1);
@@ -2049,8 +2059,142 @@
     ticketEl.appendChild(el);
     renderPave();
   }
-  function fermerPave(){ var el = document.getElementById('pave'); if(el) el.parentNode.removeChild(el); pave = null; }
+  function fermerPave(){
+    var el = document.getElementById('pave'); if(el) el.parentNode.removeChild(el); pave = null; qte = null;
+    // le pavé fermé, le doigt est forcément relevé : le toucher suivant compte
+    if(clicsIgnoresJusqua !== Infinity) clicsIgnoresJusqua = 0;
+  }
+
+  // ---------- Saisir une quantité d'un coup : l'appui long ----------
+  // Toucher une tuile ajoute toujours UN produit, en un geste : rien ne change.
+  // Garder le doigt appuyé une demi-seconde ouvre le pavé, pour en ajouter
+  // plusieurs d'un coup ; sur une ligne du ticket, pour corriger sa quantité.
+  // Un toucher, même rapide et répété, ne dure jamais une demi-seconde, et un
+  // doigt qui glisse (pour faire défiler) annule l'appui.
+  var APPUI_LONG = 500, appui = null, clicsIgnoresJusqua = 0;
+  var qte = null; // { id, mode:'ajout'|'ligne', saisie:'' }
+
+  function annulerAppui(){ if(appui){ clearTimeout(appui.t); appui.el.classList.remove('appui'); appui = null; } }
+  function surAppuiLong(conteneur, selecteur, cle, mode){
+    conteneur.addEventListener('pointerdown', function(e){
+      if(e.button > 0) return;
+      var el = e.target.closest(selecteur);
+      if(!el || e.target.closest('[data-forcer]')) return;
+      annulerAppui();
+      el.classList.add('appui');
+      appui = { el:el, x:e.clientX || 0, y:e.clientY || 0, t:setTimeout(function(){
+        var id = el.dataset[cle];
+        annulerAppui();
+        clicsIgnoresJusqua = Infinity; // jusqu'au relâcher
+        ouvrirQuantite(id, mode);
+      }, APPUI_LONG) };
+    });
+    conteneur.addEventListener('pointermove', function(e){
+      if(appui && (Math.abs((e.clientX || 0) - appui.x) > 10 || Math.abs((e.clientY || 0) - appui.y) > 10)) annulerAppui();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(t){
+      conteneur.addEventListener(t, function(){
+        annulerAppui();
+        if(clicsIgnoresJusqua === Infinity) clicsIgnoresJusqua = Date.now() + 400;
+      });
+    });
+    // pas de menu de l'iPad sur un appui long
+    conteneur.addEventListener('contextmenu', function(e){ if(e.target.closest(selecteur)) e.preventDefault(); });
+  }
+
+  // Quantité déjà dans le ticket (ou dans la commande en cours de remise).
+  function quantiteTicket(id){
+    var o = remiseOrder();
+    if(o){ var n = 0; o.items.forEach(function(it){ if(it.id === id) n = it.qty; }); return n; }
+    return state.cart[id] || 0;
+  }
+  function nomProduit(id){
+    var p = findProduct(id); if(p) return p.name;
+    var o = remiseOrder(), nom = id;
+    if(o) o.items.forEach(function(it){ if(it.id === id) nom = it.name; });
+    return nom;
+  }
+
+  function ouvrirQuantite(id, mode){
+    if(!findProduct(id) && mode === 'ajout') return;
+    fermerPave();
+    qte = { id:id, mode:mode, saisie:'' };
+    var el = document.createElement('div'); el.id = 'pave'; el.className = 'qte';
+    ticketEl.appendChild(el);
+    renderQuantite();
+  }
+
+  function renderQuantite(){
+    var el = document.getElementById('pave'); if(!el || !qte) return;
+    var p = findProduct(qte.id), nom = nomProduit(qte.id);
+    var actuel = quantiteTicket(qte.id);
+    var n = qte.saisie === '' ? null : parseInt(qte.saisie, 10);
+    // ce qu'on peut encore prendre au stock : la ligne elle-même compte comme déjà prise
+    var dispo = p && p.tracked ? available(qte.id) + (qte.mode === 'ligne' ? actuel : 0) : Infinity;
+    var trop = n !== null && n > 0 && n > dispo;
+    var info = '';
+    if(dispo !== Infinity){
+      // après l'encaissement, le stock perd tout ce que le ticket contiendra de ce produit
+      var apres = p.stock - (qte.mode === 'ajout' ? actuel + n : n);
+      info = trop ? 'Il n\'en reste que ' + Math.max(0, dispo) + '. Le stock passera à ' + apres + ' à l\'encaissement.'
+        : 'Il en reste ' + Math.max(0, dispo) + '.';
+    }
+    var dernier = remiseOrder() && remiseOrder().items.length === 1 && qte.mode === 'ligne';
+    var libelle, actif;
+    if(qte.mode === 'ajout'){
+      libelle = n ? (trop ? 'Ajouter quand même ' + n : 'Ajouter ' + n) : 'Ajouter';
+      actif = !!n;
+    } else if(n === 0){
+      libelle = dernier ? 'Une commande garde un produit' : 'Retirer la ligne';
+      actif = !dernier;
+    } else {
+      libelle = n ? (trop ? 'Mettre quand même ' + n : 'Mettre ' + n) : 'Mettre';
+      actif = n !== null && n !== actuel;
+    }
+    var touches = ['1','2','3','4','5','6','7','8','9','C','0','⌫'].map(function(k){
+      var off = (k === '⌫' || k === 'C') ? qte.saisie === '' : qte.saisie.length >= 3;
+      return '<button data-q="' + k + '"' + (k === '⌫' ? ' aria-label="Effacer"' : (k === 'C' ? ' aria-label="Tout effacer"' : '')) + (off ? ' disabled' : '') + '>' + k + '</button>';
+    }).join('');
+    el.innerHTML =
+      '<div class="qte-titre">' + (qte.mode === 'ajout' ? 'Combien de ' + escapeHtml(nom) + ' ?' : escapeHtml(nom) + ' : ' + actuel + ' dans le ticket. Combien en tout ?') + '</div>' +
+      '<div class="ecran-pave"><span>Quantité</span><b class="num" id="pave-qte">' + (qte.saisie === '' ? '0' : qte.saisie) + '</b></div>' +
+      '<div class="qte-info num' + (trop ? ' trop' : '') + '" id="pave-qte-info">' + info + '</div>' +
+      '<div class="touches">' + touches + '</div>' +
+      '<div class="actions"><button id="pave-retour">Retour</button><button id="pave-qte-ok"' + (trop ? ' class="trop"' : '') + (actif ? '' : ' disabled') + '>' + libelle + '</button></div>';
+  }
+
+  // Mettre une ligne à une quantité exacte.
+  function mettreQuantite(id, n){
+    if(remiseOrder()){ modifierRemise(id, n - quantiteTicket(id)); return; }
+    if(n <= 0) delete state.cart[id];
+    else { if(!state.cart[id]) ligneNeuve = id; state.cart[id] = n; }
+    flashId = n > 0 ? id : null;
+    saveState();
+    renderCart();
+  }
+
+  surAppuiLong(productsEl, 'button[data-product]', 'product', 'ajout');
+  surAppuiLong(cartLinesEl, 'button.ligne[data-id]', 'id', 'ligne');
+
   ticketEl.addEventListener('click', function(e){
+    if(qte){
+      var k = e.target.closest('[data-q]');
+      if(k){
+        var c = k.dataset.q;
+        if(c === '⌫') qte.saisie = qte.saisie.slice(0, -1);
+        else if(c === 'C') qte.saisie = '';
+        else if(qte.saisie.length < 3) qte.saisie = (qte.saisie === '0' ? '' : qte.saisie) + c;
+        renderQuantite(); return;
+      }
+      if(e.target.closest('#pave-retour')){ fermerPave(); return; }
+      if(e.target.closest('#pave-qte-ok')){
+        var id = qte.id, mode = qte.mode, n = parseInt(qte.saisie, 10) || 0;
+        fermerPave();
+        if(mode === 'ajout'){ if(n > 0) addToCart(id, n); }
+        else mettreQuantite(id, n);
+      }
+      return;
+    }
     if(pave === null) return;
     var k = e.target.closest('[data-k]');
     if(k){ pave = tapeMontant(pave, k.dataset.k); renderPave(); return; }
